@@ -84,6 +84,16 @@ class Vehicle extends Model
     }
 
     /**
+     * Referral codes assigned to this vehicle.
+     *
+     * @return HasMany<ReferralCode, $this>
+     */
+    public function referralCodes(): HasMany
+    {
+        return $this->hasMany(ReferralCode::class);
+    }
+
+    /**
      * Determine if vehicle is active.
      */
     public function isActive(): bool

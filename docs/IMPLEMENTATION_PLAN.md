@@ -93,7 +93,29 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 3: Telegram Bot & Lead Attribution Pipeline
+### Phase 3: Referral Codes & QR Generation Engine (Completed)
+- **Objective:** Generate collision-resistant referral codes and vector QR codes bound to the Partner -> Driver -> Vehicle hierarchy, producing actionable Telegram deep links.
+- **Implemented Deliverables:**
+  1. **Database & Schema:**
+     - `referral_codes` table with strict foreign keys (`referral_partner_id`, `driver_id`, `vehicle_id`, `created_by` on delete restrict).
+     - Unique index on `code`.
+     - Status enum: `ACTIVE`, `INACTIVE` with `deactivated_at` audit timestamp.
+  2. **Domain Services:**
+     - `TelegramReferralLinkService`: dynamically formats `https://t.me/{BOT_USERNAME}?start={CODE}`.
+     - `QrCodeService`: vector SVG generation, data URIs, and direct attachment download responses.
+     - `ReferralCodeService`: enforces hierarchical ownership validity (active partner -> active driver belonging to partner -> active vehicle belonging to driver), collision-resistant token generation, metadata updates with attribution immutability, safe deactivation, and deletion protection.
+  3. **User Interface (Vue 3 + Inertia):**
+     - Full CRUD views (`Index`, `Create`, `Edit`, `Show`, `Print`).
+     - Cascading partner -> driver -> vehicle dropdown selection with validation.
+     - 1-click clipboard copy of Telegram deep link.
+     - High-contrast, printable flyer view formatted for vehicle seat/dashboard display.
+  4. **Verification Gate:**
+     - **102 automated tests passed (239 assertions), 100% green.**
+     - TypeScript strict checks and Vite production asset build passed (`✓ built in 13.14s`).
+
+---
+
+### Phase 4: Telegram Bot Integration & Lead Attribution Pipeline
 - **Objective:** Capture customer QR scans from Telegram, parse referral tokens, and create attributed leads in real time.
 - **Tasks:**
   1. Create `telegram_users`, `leads`, and `attribution_logs` migrations and models.
@@ -107,7 +129,7 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 4: Customer Lead & Order Management (Staff Portal)
+### Phase 5: Customer Lead & Order Management (Staff Portal)
 - **Objective:** Provide counter staff with an intuitive lead pipeline and convert leads into confirmed translation orders.
 - **Tasks:**
   1. Build Lead Inbox and Kanban board (`New`, `Contacted`, `Quoted`, `Converted`, `Lost`).
@@ -119,7 +141,7 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 5: Payment Processing & Commission Calculation Engine
+### Phase 6: Payment Processing & Commission Calculation Engine
 - **Objective:** Verify customer payments, automatically calculate referral commissions, and manage driver payouts.
 - **Tasks:**
   1. Create `payments`, `commissions`, and `commission_payouts` migrations and models.
@@ -135,7 +157,7 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 6: Reporting, Polish & Production Readiness
+### Phase 7: Reporting, Polish & Production Readiness
 - **Objective:** Provide business insights to management, polish user interface, and ensure production readiness.
 - **Tasks:**
   1. Driver Performance Dashboard (total scans, lead conversion rate, total revenue generated, total commissions paid).
@@ -145,3 +167,4 @@ Phase 6: Reporting, Polish & Production Readiness
 - **Verification Gate:**
   * Complete test suite passing with 100% green status.
   * Operational sign-off from project stakeholders.
+

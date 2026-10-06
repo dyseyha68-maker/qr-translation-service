@@ -54,6 +54,8 @@ class HandleInertiaRequests extends Middleware
                     'createDrivers' => $user?->can('drivers.create') ?? false,
                     'viewVehicles' => $user?->can('vehicles.view') ?? false,
                     'createVehicles' => $user?->can('vehicles.create') ?? false,
+                    'viewReferralCodes' => $user?->can('referral_codes.view') ?? false,
+                    'createReferralCodes' => $user?->can('referral_codes.create') ?? false,
                 ],
             ],
             'flash' => [

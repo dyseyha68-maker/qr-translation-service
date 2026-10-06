@@ -61,9 +61,18 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::VEHICLES_CREATE->value,
             PermissionName::VEHICLES_UPDATE->value,
             PermissionName::VEHICLES_DELETE->value,
+            // Phase 3 permissions
+            PermissionName::REFERRAL_CODES_VIEW->value,
+            PermissionName::REFERRAL_CODES_CREATE->value,
+            PermissionName::REFERRAL_CODES_UPDATE->value,
+            PermissionName::REFERRAL_CODES_DELETE->value,
+            PermissionName::REFERRAL_CODES_ACTIVATE->value,
+            PermissionName::REFERRAL_CODES_DEACTIVATE->value,
+            PermissionName::REFERRAL_CODES_QR_VIEW->value,
+            PermissionName::REFERRAL_CODES_QR_DOWNLOAD->value,
         ]);
 
-        // 4. Staff: Operational read-only view of partners, drivers, vehicles + dashboard
+        // 4. Staff: Operational read-only view of partners, drivers, vehicles, referral codes + QR download
         $staff = Role::firstOrCreate([
             'name' => RoleName::STAFF->value,
             'guard_name' => 'web',
@@ -73,6 +82,10 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::PARTNERS_VIEW->value,
             PermissionName::DRIVERS_VIEW->value,
             PermissionName::VEHICLES_VIEW->value,
+            // Phase 3 read & QR permissions
+            PermissionName::REFERRAL_CODES_VIEW->value,
+            PermissionName::REFERRAL_CODES_QR_VIEW->value,
+            PermissionName::REFERRAL_CODES_QR_DOWNLOAD->value,
         ]);
 
         // 5. Finance: Dashboard access only in Phase 2

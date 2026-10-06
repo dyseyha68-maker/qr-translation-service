@@ -90,6 +90,34 @@ export interface Vehicle {
     };
 }
 
+export interface ReferralCode {
+    id: number;
+    code: string;
+    referral_partner_id: number;
+    driver_id: number;
+    vehicle_id: number;
+    status: 'ACTIVE' | 'INACTIVE';
+    label?: string | null;
+    notes?: string | null;
+    created_by: number;
+    deactivated_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
+    referral_partner?: ReferralPartner | null;
+    driver?: Driver | null;
+    vehicle?: Vehicle | null;
+    creator?: User | null;
+    can?: {
+        view: boolean;
+        edit: boolean;
+        delete: boolean;
+        activate: boolean;
+        deactivate: boolean;
+        viewQr: boolean;
+        downloadQr: boolean;
+    };
+}
+
 export interface PaginatedData<T> {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -115,6 +143,8 @@ export type PageProps<
             createDrivers: boolean;
             viewVehicles: boolean;
             createVehicles: boolean;
+            viewReferralCodes: boolean;
+            createReferralCodes: boolean;
         };
     };
     flash: {

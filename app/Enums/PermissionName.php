@@ -35,6 +35,16 @@ enum PermissionName: string
     case VEHICLES_UPDATE = 'vehicles.update';
     case VEHICLES_DELETE = 'vehicles.delete';
 
+    // Phase 3: Referral Codes & QR Engine
+    case REFERRAL_CODES_VIEW = 'referral_codes.view';
+    case REFERRAL_CODES_CREATE = 'referral_codes.create';
+    case REFERRAL_CODES_UPDATE = 'referral_codes.update';
+    case REFERRAL_CODES_DELETE = 'referral_codes.delete';
+    case REFERRAL_CODES_ACTIVATE = 'referral_codes.activate';
+    case REFERRAL_CODES_DEACTIVATE = 'referral_codes.deactivate';
+    case REFERRAL_CODES_QR_VIEW = 'referral_codes.qr.view';
+    case REFERRAL_CODES_QR_DOWNLOAD = 'referral_codes.qr.download';
+
     /**
      * @return array<string>
      */

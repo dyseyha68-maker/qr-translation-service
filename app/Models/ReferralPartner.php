@@ -52,6 +52,14 @@ class ReferralPartner extends Model
     }
 
     /**
+     * @return HasMany<ReferralCode, ReferralPartner>
+     */
+    public function referralCodes(): HasMany
+    {
+        return $this->hasMany(ReferralCode::class);
+    }
+
+    /**
      * Determine if the partner is currently active.
      */
     public function isActive(): bool

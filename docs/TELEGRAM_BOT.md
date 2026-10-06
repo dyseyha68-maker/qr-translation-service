@@ -49,12 +49,12 @@ When a user begins the conversation with a referral deep link, Telegram transmit
    - Command: `/start`
    - Parameter: `REF_TK874M`
 2. **Token Verification:**
-   - Query `referral_qr_codes` where `code = 'REF_TK874M'` and `is_active = true`.
+   - Query `referral_codes` where `code = 'REF_TK874M'` and `status = 'ACTIVE'`.
    - If not found or inactive, log unknown referral and proceed as direct inquiry.
 3. **User Profile Registration:**
    - Upsert `telegram_users` table with `telegram_id`, `first_name`, `last_name`, `username`, and `language_code`.
 4. **Attribution & Lead Creation:**
-   - Execute `ReferralAttributionService::attributeTelegramUser(telegramUser, qrCode)`.
+   - Execute `ReferralAttributionService::attributeTelegramUser(telegramUser, referralCode)`.
    - Applies the 30-day window policy and records to `attribution_logs`.
 
 ---

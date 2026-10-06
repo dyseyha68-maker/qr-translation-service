@@ -6,6 +6,7 @@ const props = defineProps<{
     activePartnersCount?: number;
     activeDriversCount?: number;
     activeVehiclesCount?: number;
+    activeReferralCodesCount?: number;
 }>();
 
 const page = usePage();
@@ -61,8 +62,8 @@ const page = usePage();
                     </div>
                 </div>
 
-                <!-- Phase 2 Operational Metrics -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Operational Metrics -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
                         <div class="flex items-center justify-between">
                             <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Partners</span>
@@ -71,7 +72,7 @@ const page = usePage();
                         <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
                             {{ props.activePartnersCount ?? 0 }}
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">Companies & driver associations</p>
+                        <p class="text-xs text-slate-500 mt-1">Companies & associations</p>
                         <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800" v-if="$page.props.auth.can.viewPartners">
                             <Link :href="route('referral-partners.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
                                 View Partners &rarr;
@@ -103,10 +104,26 @@ const page = usePage();
                         <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
                             {{ props.activeVehiclesCount ?? 0 }}
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">Taxis, PassApp & Tuk-Tuks registered</p>
+                        <p class="text-xs text-slate-500 mt-1">Registered vehicles</p>
                         <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800" v-if="$page.props.auth.can.viewVehicles">
                             <Link :href="route('vehicles.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
                                 View Vehicles &rarr;
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Referral Codes</span>
+                            <span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+                        </div>
+                        <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
+                            {{ props.activeReferralCodesCount ?? 0 }}
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Active QR referral codes</p>
+                        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800" v-if="$page.props.auth.can.viewReferralCodes">
+                            <Link :href="route('referral-codes.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
+                                View Referral Codes &rarr;
                             </Link>
                         </div>
                     </div>

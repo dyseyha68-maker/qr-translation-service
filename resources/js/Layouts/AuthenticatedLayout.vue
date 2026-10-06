@@ -65,6 +65,15 @@ const page = usePage();
                                     Vehicles
                                 </NavLink>
 
+                                <!-- Phase 3 Navigation: Referral Codes -->
+                                <NavLink
+                                    v-if="$page.props.auth.can.viewReferralCodes"
+                                    :href="route('referral-codes.index')"
+                                    :active="route().current('referral-codes.*')"
+                                >
+                                    Referral Codes
+                                </NavLink>
+
                                 <!-- Phase 1 Navigation: Users -->
                                 <NavLink
                                     v-if="$page.props.auth.can.viewUsers"
@@ -201,6 +210,14 @@ const page = usePage();
                             :active="route().current('vehicles.*')"
                         >
                             Vehicles
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.can.viewReferralCodes"
+                            :href="route('referral-codes.index')"
+                            :active="route().current('referral-codes.*')"
+                        >
+                            Referral Codes
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink

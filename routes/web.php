@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReferralCodeController;
 use App\Http\Controllers\ReferralPartnerController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VehicleController;
 use App\Models\Driver;
+use App\Models\ReferralCode;
 use App\Models\ReferralPartner;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Application;
@@ -28,6 +30,7 @@ Route::get('/dashboard', function () {
         'activePartnersCount' => ReferralPartner::active()->count(),
         'activeDriversCount' => Driver::active()->count(),
         'activeVehiclesCount' => Vehicle::active()->count(),
+        'activeReferralCodesCount' => ReferralCode::active()->count(),
     ]);
 })->middleware(['auth'])->name('dashboard');
 
@@ -49,6 +52,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('vehicles/{vehicle}/activate', [VehicleController::class, 'activate'])->name('vehicles.activate');
     Route::patch('vehicles/{vehicle}/deactivate', [VehicleController::class, 'deactivate'])->name('vehicles.deactivate');
     Route::resource('vehicles', VehicleController::class);
+
+    Route::patch('referral-codes/{referral_code}/activate', [ReferralCodeController::class, 'activate'])->name('referral-codes.activate');
+    Route::patch('referral-codes/{referral_code}/deactivate', [ReferralCodeController::class, 'deactivate'])->name('referral-codes.deactivate');
+    Route::get('referral-codes/{referral_code}/qr', [ReferralCodeController::class, 'qr'])->name('referral-codes.qr');
+    Route::get('referral-codes/{referral_code}/download', [ReferralCodeController::class, 'download'])->name('referral-codes.download');
+    Route::get('referral-codes/{referral_code}/print', [ReferralCodeController::class, 'print'])->name('referral-codes.print');
+    Route::resource('referral-codes', ReferralCodeController::class);
 });
 
 require __DIR__.'/auth.php';

@@ -61,6 +61,16 @@ class Driver extends Model
     }
 
     /**
+     * Referral codes assigned to this driver.
+     *
+     * @return HasMany<ReferralCode, $this>
+     */
+    public function referralCodes(): HasMany
+    {
+        return $this->hasMany(ReferralCode::class);
+    }
+
+    /**
      * Determine if driver is active.
      */
     public function isActive(): bool
