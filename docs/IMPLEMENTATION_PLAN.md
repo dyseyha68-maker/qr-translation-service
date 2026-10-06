@@ -68,17 +68,28 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 2: Driver Management & QR Code Generation Engine
-- **Status:** **PENDING APPROVAL**
-- **Objective:** Enable staff to register taxi/tuk-tuk drivers and generate unique, printable referral QR codes.
-- **Tasks:**
-  1. Create `drivers` and `referral_qr_codes` database migrations and Eloquent models.
-  2. Implement Driver CRUD (Driver profile, vehicle type, plate number, contact details, Bakong payout info, commission rates).
-  3. Build collision-resistant referral token generator (`REF_XXXXXX`).
-  4. Integrate QR code generation library (`simplesoftwareio/simple-qrcode`).
-  5. Create driver detail view with QR code preview, SVG/PNG download, and printable QR sticker/card layout.
-- **Verification Gate:**
-  * Automated unit tests asserting token uniqueness, collision prevention, and correct Telegram URL deep link format (`https://t.me/<bot>?start=REF_{code}`).
+### Phase 2: Referral Partners, Drivers & Vehicles
+- **Status:** **COMPLETED**
+- **Objective:** Establish the fleet hierarchy (`ReferralPartner -> Driver -> Vehicle`) with status-based deactivation, normalized plate identification, strict authorization, and historical data preservation.
+- **Implemented Scope:**
+  1. **Domain Enums & Schemas:**
+     - Enums: `PartnerType` (`DRIVER`, `COMPANY`, `OTHER`), `PartnerStatus` (`ACTIVE`, `INACTIVE`), `DriverStatus` (`ACTIVE`, `INACTIVE`), `VehicleType` (`TAXI`, `TUK_TUK`, `OTHER`), `VehicleStatus` (`ACTIVE`, `INACTIVE`).
+     - Tables: `referral_partners`, `drivers` (foreign key `referral_partner_id` with `restrictOnDelete()`), `vehicles` (foreign key `driver_id` with `restrictOnDelete()`).
+     - Models: `ReferralPartner`, `Driver`, `Vehicle` with custom scopes and mutators (plate number uppercase trimming normalization).
+  2. **Domain Services & Authorization:**
+     - `ReferralPartnerService`, `DriverService`, `VehicleService`.
+     - Deletion protection: partners with drivers and drivers with vehicles cannot be deleted; soft status deactivation is enforced.
+     - Policies: `ReferralPartnerPolicy`, `DriverPolicy`, `VehiclePolicy` protecting `view`, `create`, `update`, `delete`, and status toggles.
+     - RBAC: `SUPER_ADMIN` and `ADMIN` hold full management rights; `STAFF` has read-only access; `FINANCE` restricted.
+  3. **User Interface (Vue 3 + Inertia):**
+     - Full CRUD views for Partners (`Index`, `Create`, `Edit`, `Show`).
+     - Full CRUD views for Drivers (`Index`, `Create`, `Edit`, `Show`).
+     - Full CRUD views for Vehicles (`Index`, `Create`, `Edit`, `Show`).
+     - Reassignment warning when transferring vehicles between drivers.
+     - Operational dashboard cards for Active Partners, Active Drivers, and Active Vehicles.
+  4. **Verification Gate:**
+     - **83 automated tests passed (196 assertions), 100% green.**
+     - TypeScript strict checks and Vite production asset build passed (`✓ built in 18.42s`).
 
 ---
 

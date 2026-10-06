@@ -30,7 +30,7 @@ const page = usePage();
                             </div>
 
                             <!-- Navigation Links -->
-                            <div class="hidden space-x-6 sm:-my-px sm:ms-10 sm:flex">
+                            <div class="hidden space-x-6 sm:-my-px sm:ms-8 sm:flex">
                                 <NavLink
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
@@ -38,6 +38,34 @@ const page = usePage();
                                     Dashboard
                                 </NavLink>
 
+                                <!-- Phase 2 Navigation: Referral Partners -->
+                                <NavLink
+                                    v-if="$page.props.auth.can.viewPartners"
+                                    :href="route('referral-partners.index')"
+                                    :active="route().current('referral-partners.*')"
+                                >
+                                    Partners
+                                </NavLink>
+
+                                <!-- Phase 2 Navigation: Drivers -->
+                                <NavLink
+                                    v-if="$page.props.auth.can.viewDrivers"
+                                    :href="route('drivers.index')"
+                                    :active="route().current('drivers.*')"
+                                >
+                                    Drivers
+                                </NavLink>
+
+                                <!-- Phase 2 Navigation: Vehicles -->
+                                <NavLink
+                                    v-if="$page.props.auth.can.viewVehicles"
+                                    :href="route('vehicles.index')"
+                                    :active="route().current('vehicles.*')"
+                                >
+                                    Vehicles
+                                </NavLink>
+
+                                <!-- Phase 1 Navigation: Users -->
                                 <NavLink
                                     v-if="$page.props.auth.can.viewUsers"
                                     :href="route('users.index')"
@@ -149,6 +177,30 @@ const page = usePage();
                             :active="route().current('dashboard')"
                         >
                             Dashboard
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.can.viewPartners"
+                            :href="route('referral-partners.index')"
+                            :active="route().current('referral-partners.*')"
+                        >
+                            Partners
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.can.viewDrivers"
+                            :href="route('drivers.index')"
+                            :active="route().current('drivers.*')"
+                        >
+                            Drivers
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.can.viewVehicles"
+                            :href="route('vehicles.index')"
+                            :active="route().current('vehicles.*')"
+                        >
+                            Vehicles
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink

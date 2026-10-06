@@ -51,24 +51,58 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 
 ---
 
-### 3.2 `drivers` (Taxi & Tuk-Tuk Referrers)
+### 3.2 `referral_partners` (Partner Companies & Associations)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `driver_code` | VARCHAR(32) | UNIQUE, NOT NULL | Human-readable ID (e.g., `DRV-0012`) |
-| `full_name` | VARCHAR(255) | NOT NULL | Driver's legal name |
-| `phone_number` | VARCHAR(50) | NOT NULL, INDEX | Primary mobile (Telegram/WhatsApp) |
-| `vehicle_type` | ENUM | NOT NULL | `'tuk_tuk'`, `'taxi'`, `'passapp'`, `'other'` |
-| `plate_number` | VARCHAR(50) | NULL | Vehicle license plate number |
-| `telegram_user_id`| BIGINT UNSIGNED | NULL, INDEX | Personal Telegram ID (for exclusion/alerts) |
-| `payout_bank_name`| VARCHAR(100) | NULL | Bank name (e.g., ABA Bank, ACLEDA, Wing) |
-| `payout_account_name` | VARCHAR(255) | NULL | Bank account holder name |
-| `payout_account_number` | VARCHAR(100) | NULL | Account number / Bakong account ID |
-| `default_commission_type` | ENUM | DEFAULT `'percentage'` | `'percentage'` or `'fixed'` |
-| `default_commission_rate` | DECIMAL(8, 2) | DEFAULT 10.00 | Rate (e.g., 10.00% or fixed USD) |
-| `is_active` | BOOLEAN | DEFAULT TRUE | Active referral participation status |
-| `notes` | TEXT | NULL | Staff notes regarding driver |
-| `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Unique partner identifier |
+| `name` | VARCHAR(255) | NOT NULL, INDEX | Primary name of partner / association |
+| `type` | VARCHAR(50) | NOT NULL, INDEX | Enum: `'DRIVER'`, `'COMPANY'`, `'OTHER'` |
+| `phone` | VARCHAR(50) | NULL | Contact phone number |
+| `email` | VARCHAR(255) | NULL | Contact email address |
+| `company_name` | VARCHAR(255) | NULL | Registered corporate name |
+| `address` | TEXT | NULL | Physical office or station address |
+| `notes` | TEXT | NULL | Staff operational notes |
+| `status` | VARCHAR(50) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'` |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.3 `drivers` (Taxi & Tuk-Tuk Drivers)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Unique driver identifier |
+| `referral_partner_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_partners(id)`, `ON DELETE RESTRICT` | Associated referral partner |
+| `name` | VARCHAR(255) | NOT NULL, INDEX | Driver's legal full name |
+| `phone` | VARCHAR(50) | INDEX, NULL | Contact mobile number |
+| `email` | VARCHAR(255) | NULL | Contact email address |
+| `national_id` | VARCHAR(50) | NULL | Cambodian National ID / Passport No. |
+| `address` | TEXT | NULL | Residential or base station address |
+| `notes` | TEXT | NULL | Operational notes |
+| `status` | VARCHAR(50) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'` |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.4 `vehicles` (Taxis, Tuk-Tuks & Transportation Units)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Unique vehicle identifier |
+| `driver_id` | BIGINT UNSIGNED | NOT NULL, FK -> `drivers(id)`, `ON DELETE RESTRICT` | Assigned driver |
+| `vehicle_type` | VARCHAR(50) | NOT NULL, INDEX | Enum: `'TAXI'`, `'TUK_TUK'`, `'OTHER'` |
+| `plate_number` | VARCHAR(50) | NOT NULL, INDEX | Normalized license plate number |
+| `make` | VARCHAR(100) | NULL | Vehicle manufacturer (e.g. Toyota, Bajaj) |
+| `model` | VARCHAR(100) | NULL | Vehicle model (e.g. Prius, RE Maxima) |
+| `color` | VARCHAR(50) | NULL | Vehicle exterior color |
+| `notes` | TEXT | NULL | Vehicle notes (e.g. sticker placement) |
+| `status` | VARCHAR(50) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'` |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+> [!IMPORTANT]
+> **Historical Integrity & Snapshot Rules:**
+> 1. Foreign key constraints enforce `ON DELETE RESTRICT` to prevent destructive cascades of partners or drivers with dependent records.
+> 2. Deactivation via `status = 'INACTIVE'` is mandatory for retiring partners, drivers, or vehicles. Historical records remain fully queryable.
+> 3. Duplicate active vehicle plate numbers are checked and prevented application-wide with uppercase trimmed normalization.
+> 4. **Future Phases Recommendation (Phase 3 & 4):** When `referral_qr_codes`, `leads`, and `orders` are created in upcoming phases, attribution records MUST snapshot `referral_partner_id`, `driver_id`, `vehicle_id`, and `vehicle_plate_number` at transaction time. This ensures that any subsequent vehicle reassignment never modifies past referral history.
 
 ---
 

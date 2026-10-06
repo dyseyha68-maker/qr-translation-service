@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, usePage } from '@inertiajs/vue3';
+import { Head, Link, usePage } from '@inertiajs/vue3';
+
+const props = defineProps<{
+    activePartnersCount?: number;
+    activeDriversCount?: number;
+    activeVehiclesCount?: number;
+}>();
 
 const page = usePage();
 </script>
@@ -55,34 +61,54 @@ const page = usePage();
                     </div>
                 </div>
 
-                <!-- System Information Card -->
+                <!-- Phase 2 Operational Metrics -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Account Status</div>
-                        <div class="mt-2 flex items-center gap-2">
-                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                            <span class="text-lg font-semibold text-slate-900 dark:text-white">
-                                {{ $page.props.auth.user.status }}
-                            </span>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Partners</span>
+                            <span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">Authenticated session active</p>
+                        <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
+                            {{ props.activePartnersCount ?? 0 }}
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Companies & driver associations</p>
+                        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800" v-if="$page.props.auth.can.viewPartners">
+                            <Link :href="route('referral-partners.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
+                                View Partners &rarr;
+                            </Link>
+                        </div>
                     </div>
 
                     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Assigned Role</div>
-                        <div class="mt-2 text-lg font-semibold text-blue-600 dark:text-blue-400">
-                            {{ $page.props.auth.user.role }}
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Drivers</span>
+                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">Role-based access control enabled</p>
+                        <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
+                            {{ props.activeDriversCount ?? 0 }}
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Taxi and tuk-tuk referrers</p>
+                        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800" v-if="$page.props.auth.can.viewDrivers">
+                            <Link :href="route('drivers.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
+                                View Drivers &rarr;
+                            </Link>
+                        </div>
                     </div>
 
                     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-                        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">System Health</div>
-                        <div class="mt-2 flex items-center gap-2">
-                            <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                            <span class="text-lg font-semibold text-emerald-600 dark:text-emerald-400">Operational</span>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active Vehicles</span>
+                            <span class="h-2.5 w-2.5 rounded-full bg-purple-500"></span>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">Phase 1 Authentication & Security active</p>
+                        <div class="mt-2 text-3xl font-extrabold text-slate-900 dark:text-white">
+                            {{ props.activeVehiclesCount ?? 0 }}
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">Taxis, PassApp & Tuk-Tuks registered</p>
+                        <div class="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800" v-if="$page.props.auth.can.viewVehicles">
+                            <Link :href="route('vehicles.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
+                                View Vehicles &rarr;
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
