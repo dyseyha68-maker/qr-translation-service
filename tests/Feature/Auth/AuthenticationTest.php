@@ -1,5 +1,8 @@
 <?php
 
+declare(strict_types=1);
+
+use App\Enums\UserStatus;
 use App\Models\User;
 
 test('login screen can be rendered', function () {
@@ -9,7 +12,9 @@ test('login screen can be rendered', function () {
 });
 
 test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create([
+        'status' => UserStatus::ACTIVE,
+    ]);
 
     $response = $this->post('/login', [
         'email' => $user->email,
@@ -38,4 +43,24 @@ test('users can logout', function () {
 
     $this->assertGuest();
     $response->assertRedirect('/');
+});
+
+test('unauthenticated users cannot access dashboard', function () {
+    $response = $this->get('/dashboard');
+
+    $response->assertRedirect('/login');
+});
+
+test('inactive users cannot authenticate', function () {
+    $user = User::factory()->create([
+        'status' => UserStatus::INACTIVE,
+    ]);
+
+    $response = $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('email');
 });

@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, HasRoles, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +24,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'status',
     ];
 
     /**
@@ -43,6 +47,23 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'status' => UserStatus::class,
         ];
+    }
+
+    /**
+     * Determine if the user account is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->status === UserStatus::ACTIVE;
+    }
+
+    /**
+     * Determine if the user holds the Super Admin role.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole('SUPER_ADMIN');
     }
 }

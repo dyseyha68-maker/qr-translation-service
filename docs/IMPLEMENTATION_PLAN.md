@@ -10,11 +10,11 @@ In accordance with `AGENTS.md`, development progresses **strictly phase by phase
 ## Roadmap Summary
 
 ```text
-Phase 0: Environment & Core Foundations
+Phase 0: Environment & Core Foundations [COMPLETED]
            ↓
-Phase 1: Authentication & Role-Based Access Control (RBAC)
+Phase 1: Authentication & Role-Based Access Control (RBAC) [COMPLETED]
            ↓
-Phase 2: Driver Management & QR Code Generation Engine
+Phase 2: Driver Management & QR Code Generation Engine [PENDING APPROVAL]
            ↓
 Phase 3: Telegram Bot & Lead Attribution Pipeline
            ↓
@@ -30,33 +30,46 @@ Phase 6: Reporting, Polish & Production Readiness
 ## Detailed Phases
 
 ### Phase 0: Environment Setup & Core Foundations
-- **Objective:** Provision runtime environment, initialize Laravel 12 application scaffold, and configure frontend and testing frameworks.
-- **Tasks:**
-  1. Verify and configure local runtime toolchain (Git, PHP 8.4+, Composer, Node.js 20+).
-  2. Scaffold clean Laravel 12 with Inertia.js, Vue 3, TypeScript, and Tailwind CSS.
-  3. Configure database connection (MySQL 8+ / SQLite for tests).
-  4. Setup testing framework (Pest / PHPUnit) with database refresh traits.
-  5. Commit initial working documentation (`AGENTS.md` and all `docs/*` files).
-- **Verification Gate:**
-  * Clean `php artisan test` execution.
-  * Successful `npm run build` and `npm run dev` compilation.
+- **Status:** **COMPLETED & VERIFIED**
+- **Deliverables:**
+  * Host toolchain configured (Git 2.48, PHP 8.4.26, Composer 2.11, Node.js 22 LTS).
+  * Laravel 12.69 + Inertia.js Vue 3 + TypeScript + Tailwind CSS initialized.
+  * Pest PHP 3.8 testing harness configured.
+  * Working specifications in `docs/` and `AGENTS.md`.
 
 ---
 
 ### Phase 1: Authentication & Role-Based Access Control (RBAC)
-- **Objective:** Secure staff portal with role-based access for Admin, Staff, and Finance personas.
-- **Tasks:**
-  1. Implement authentication (login, logout, password reset, session security).
-  2. Install and configure `spatie/laravel-permission`.
-  3. Seed initial roles (`Super Admin`, `Staff`, `Finance`) and default administrative user.
-  4. Build responsive, high-contrast staff portal layout (Sidebar navigation, user profile menu, notification banner).
-  5. Implement role-protected route middleware.
+- **Status:** **COMPLETED & VERIFIED**
+- **Objective:** Secure staff portal with role-based access for Super Admin, Admin, Staff, and Finance personas.
+- **Implemented Architecture:**
+  1. **Authentication & Inactive User Protection:**
+     - `LoginRequest` checks user status: Inactive users cannot authenticate.
+     - `EnsureUserIsActive` middleware: Inactive sessions are invalidated immediately and redirected.
+  2. **Role & Permission Infrastructure (Spatie):**
+     - Roles: `SUPER_ADMIN`, `ADMIN`, `STAFF`, `FINANCE`.
+     - Permissions: `users.view`, `users.create`, `users.update`, `users.delete`, `roles.view`, `roles.assign`, `dashboard.view`.
+     - Seeders: `RoleAndPermissionSeeder` and `UserSeeder`.
+  3. **Super Admin Safety Safeguards:**
+     - Enforced in `UserPolicy` and `UserManagementService`.
+     - Final active `SUPER_ADMIN` cannot be deleted.
+     - Final active `SUPER_ADMIN` cannot be deactivated.
+     - Unauthorized users cannot assign `SUPER_ADMIN` role or modify a `SUPER_ADMIN` account.
+     - Unauthorized users cannot strip `SUPER_ADMIN` privileges.
+  4. **User Management Interface (Vue 3 + Inertia):**
+     - `Users/Index.vue`: High-contrast table with role/status badges and action buttons respecting permissions.
+     - `Users/Create.vue`: Validation, role assignment, and status selection.
+     - `Users/Edit.vue`: Update credentials, roles, and status (with duplicate email handling).
+     - `Dashboard.vue`: Welcome greeting, user role badge, and system health status.
+     - `AuthenticatedLayout.vue`: Phase 1 navigation (`Dashboard`, `Users` [permission-gated]).
 - **Verification Gate:**
-  * Automated feature tests verifying role permissions and unauthorized route blocking.
+  * **47 automated tests passed (112 assertions), 100% green.**
+  * Clean `npm run build` production asset compilation (819 modules transformed).
 
 ---
 
 ### Phase 2: Driver Management & QR Code Generation Engine
+- **Status:** **PENDING APPROVAL**
 - **Objective:** Enable staff to register taxi/tuk-tuk drivers and generate unique, printable referral QR codes.
 - **Tasks:**
   1. Create `drivers` and `referral_qr_codes` database migrations and Eloquent models.

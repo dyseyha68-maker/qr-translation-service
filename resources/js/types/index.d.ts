@@ -3,6 +3,13 @@ export interface User {
     name: string;
     email: string;
     email_verified_at?: string;
+    status: 'ACTIVE' | 'INACTIVE';
+    role: string;
+    created_at?: string;
+    can?: {
+        edit: boolean;
+        delete: boolean;
+    };
 }
 
 export type PageProps<
@@ -10,5 +17,13 @@ export type PageProps<
 > = T & {
     auth: {
         user: User;
+        can: {
+            viewUsers: boolean;
+            createUsers: boolean;
+        };
+    };
+    flash: {
+        success?: string | null;
+        error?: string | null;
     };
 };

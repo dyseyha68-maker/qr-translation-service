@@ -52,7 +52,33 @@ To incentivize drivers to recommend the company's services, the company provides
 
 ---
 
-## 4. End-to-End Business Workflow
+## 4. Phase 1: Authentication & User Management (Implemented)
+
+### Authentication Architecture
+- Built on standard secure session authentication with hashed passwords (bcrypt/Argon2id).
+- Inactive user protection: Inactive accounts (`INACTIVE`) cannot authenticate; active sessions are immediately invalidated if deactivated.
+- Rate limiting protection against brute force attacks (5 attempts/min with exponential backoff).
+
+### RBAC Hierarchy (Spatie Laravel Permission)
+- **Roles:**
+  - `SUPER_ADMIN`: Unrestricted administrative control, Super Admin safety safeguards.
+  - `ADMIN`: User management (view, create, update, assign non-super-admin roles), dashboard access.
+  - `STAFF`: Front desk staff, access to dashboard.
+  - `FINANCE`: Cashier and finance staff, access to dashboard.
+- **Permissions:**
+  - `users.view`, `users.create`, `users.update`, `users.delete`
+  - `roles.view`, `roles.assign`
+  - `dashboard.view`
+
+### Super Admin Safety Safeguards
+1. The final active `SUPER_ADMIN` cannot be deleted.
+2. The final active `SUPER_ADMIN` cannot be deactivated.
+3. An unauthorized user (`ADMIN`, `STAFF`, `FINANCE`) cannot assign `SUPER_ADMIN`.
+4. An unauthorized user cannot edit or remove `SUPER_ADMIN` privileges.
+
+---
+
+## 5. End-to-End Business Workflow
 
 ```text
 [Step 1: Driver Onboarding]
@@ -85,9 +111,9 @@ To incentivize drivers to recommend the company's services, the company provides
 
 ---
 
-## 5. Non-Functional Requirements
+## 6. Non-Functional Requirements
 - **Data Integrity:** Strict foreign key constraints and transactional consistency across financial tables.
 - **Auditing:** Every lead attribution, status change, and payment verification must be logged with timestamps and user identifiers.
 - **Performance:** Instantaneous lead creation upon bot webhook hit (< 500ms).
-- **Usability:** High-contrast, clean web interface tailored for busy counter staff on desktop and tablet screens.
+- **Usability:** High-contrast, clean web interface tailored for counter staff on desktop and tablet screens.
 - **Localization & Currency:** Native support for both USD ($) and Cambodian Riel (KHR) transactions.
