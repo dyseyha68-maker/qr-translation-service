@@ -66,4 +66,15 @@ class User extends Authenticatable
     {
         return $this->hasRole('SUPER_ADMIN');
     }
+
+    /**
+     * Scope a query to only include active users.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<User>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('status', UserStatus::ACTIVE);
+    }
 }

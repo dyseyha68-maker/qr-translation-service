@@ -45,6 +45,15 @@ enum PermissionName: string
     case REFERRAL_CODES_QR_VIEW = 'referral_codes.qr.view';
     case REFERRAL_CODES_QR_DOWNLOAD = 'referral_codes.qr.download';
 
+    // Phase 4: Leads, Customers & Referral Attribution
+    case LEADS_VIEW = 'leads.view';
+    case LEADS_CREATE = 'leads.create';
+    case LEADS_UPDATE = 'leads.update';
+    case LEADS_ASSIGN = 'leads.assign';
+    case LEADS_CHANGE_ATTRIBUTION = 'leads.change_attribution';
+    case LEADS_ADD_NOTE = 'leads.add_note';
+    case CUSTOMERS_VIEW = 'customers.view';
+
     /**
      * @return array<string>
      */

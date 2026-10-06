@@ -130,35 +130,96 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 
 ---
 
-### 3.4 `telegram_users` (Prospective & Existing Customers on Telegram)
+### 3.6 `telegram_users` (Prospective & Existing Customers on Telegram)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `telegram_id` | BIGINT | UNIQUE, NOT NULL | Telegram user ID |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Internal primary key |
+| `telegram_id` | BIGINT | UNIQUE, NOT NULL, INDEX | External Telegram user identifier |
+| `username` | VARCHAR(255) | NULL, INDEX | Telegram `@handle` (mutable) |
 | `first_name` | VARCHAR(255) | NULL | Telegram first name |
 | `last_name` | VARCHAR(255) | NULL | Telegram last name |
-| `username` | VARCHAR(255) | NULL, INDEX | Telegram `@handle` |
-| `phone_number` | VARCHAR(50) | NULL | Shared phone number |
-| `language_code`| VARCHAR(10) | NULL | Language preference code (en, km, zh) |
-| `last_interaction_at` | TIMESTAMP | NULL | Latest message timestamp |
+| `language_code`| VARCHAR(16) | NULL | Client language code (e.g. en, km, zh) |
+| `is_bot` | BOOLEAN | DEFAULT FALSE | Bot identity flag |
+| `phone` | VARCHAR(50) | NULL | Phone number shared via contact card |
+| `last_interaction_at` | TIMESTAMP | NULL, INDEX | Latest incoming message timestamp |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
 
 ---
 
-### 3.5 `leads` (Customer Inquiries from QR Referrals)
+### 3.7 `customers` (Service Clients)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `lead_number` | VARCHAR(32) | UNIQUE, NOT NULL | E.g., `LEAD-202610-0001` |
-| `telegram_user_id` | BIGINT UNSIGNED | FK -> `telegram_users(id)`, NOT NULL | Customer's Telegram profile |
-| `referral_qr_code_id`| BIGINT UNSIGNED | FK -> `referral_qr_codes(id)`, NULL | Scanned QR code |
-| `driver_id` | BIGINT UNSIGNED | FK -> `drivers(id)`, NULL | Attributed driver |
-| `assigned_user_id`| BIGINT UNSIGNED | FK -> `users(id)`, NULL | Staff member assigned |
-| `status` | ENUM | DEFAULT `'new'` | `'new'`, `'contacted'`, `'quoted'`, `'converted'`, `'lost'` |
-| `attribution_expires_at` | TIMESTAMP | NULL | 30-day window expiry |
-| `initial_service_interest`| VARCHAR(255) | NULL | E.g., "Driver License Translation" |
-| `notes` | TEXT | NULL | Internal conversation summary |
-| `converted_at` | TIMESTAMP | NULL | When converted to order |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Customer identifier |
+| `telegram_user_id` | BIGINT UNSIGNED | NULL, FK -> `telegram_users(id)`, `ON DELETE RESTRICT` | Associated Telegram user |
+| `name` | VARCHAR(255) | NOT NULL, INDEX | Customer display name |
+| `phone` | VARCHAR(50) | NULL, INDEX | Primary contact number |
+| `email` | VARCHAR(255) | NULL | Contact email |
+| `notes` | TEXT | NULL | Customer notes |
+| `status` | VARCHAR(32) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'` |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.8 `referral_events` (Discrete Referral Interactions)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Event record ID |
+| `referral_code_id` | BIGINT UNSIGNED | NULL, FK -> `referral_codes(id)`, `ON DELETE RESTRICT` | Scanned code |
+| `telegram_user_id` | BIGINT UNSIGNED | NULL, FK -> `telegram_users(id)`, `ON DELETE RESTRICT` | Telegram scanner |
+| `event_type` | VARCHAR(32) | NOT NULL, INDEX | Enum: `'SCAN'`, `'START'`, `'REPEAT_SCAN'`, `'INVALID_CODE'`, `'INACTIVE_CODE'`, `'UNKNOWN_CODE'` |
+| `event_token` | VARCHAR(64) | NULL, INDEX | Raw token extracted from message |
+| `telegram_update_id` | BIGINT UNSIGNED | NULL, UNIQUE, INDEX | Telegram update ID (enforces webhook idempotency) |
+| `metadata` | JSON | NULL | Context metadata |
+| `occurred_at` | TIMESTAMP | NOT NULL, INDEX | Timestamp of interaction |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.9 `referral_attributions` (Opportunity Referral Ownership)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Attribution ID |
+| `referral_event_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_events(id)`, `ON DELETE RESTRICT` | Originating event |
+| `referral_code_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_codes(id)`, `ON DELETE RESTRICT` | Attributed referral code |
+| `telegram_user_id` | BIGINT UNSIGNED | NULL, FK -> `telegram_users(id)`, `ON DELETE RESTRICT` | Scanner profile |
+| `customer_id` | BIGINT UNSIGNED | NOT NULL, FK -> `customers(id)`, `ON DELETE RESTRICT` | Client record |
+| `lead_id` | BIGINT UNSIGNED | NULL, FK -> `leads(id)`, `ON DELETE RESTRICT` | Target opportunity |
+| `referral_partner_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_partners(id)`, `ON DELETE RESTRICT` | Snapshotted Partner anchor |
+| `driver_id` | BIGINT UNSIGNED | NOT NULL, FK -> `drivers(id)`, `ON DELETE RESTRICT` | Snapshotted Driver |
+| `vehicle_id` | BIGINT UNSIGNED | NOT NULL, FK -> `vehicles(id)`, `ON DELETE RESTRICT` | Snapshotted Vehicle |
+| `attribution_status` | VARCHAR(32) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'CHANGED'`, `'CANCELLED'` |
+| `attributed_at` | TIMESTAMP | NOT NULL, INDEX | Attribution establishment timestamp |
+| `changed_at` | TIMESTAMP | NULL | Timestamp of manual reassignment |
+| `change_reason` | TEXT | NULL | Mandatory operational explanation for change |
+| `created_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | User who made manual attribution |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.10 `leads` (Customer Inquiry Opportunities)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Lead opportunity ID |
+| `customer_id` | BIGINT UNSIGNED | NOT NULL, FK -> `customers(id)`, `ON DELETE RESTRICT` | Associated customer |
+| `telegram_user_id` | BIGINT UNSIGNED | NULL, FK -> `telegram_users(id)`, `ON DELETE RESTRICT` | Associated Telegram user |
+| `referral_attribution_id` | BIGINT UNSIGNED | NULL, FK -> `referral_attributions(id)`, `ON DELETE RESTRICT` | Current active attribution |
+| `title` | VARCHAR(255) | NOT NULL | Opportunity title |
+| `description` | TEXT | NULL | Inquiry requirements |
+| `service_type` | VARCHAR(100) | NULL | Document or translation type |
+| `status` | VARCHAR(32) | NOT NULL, DEFAULT `'NEW'`, INDEX | Enum: `'NEW'`, `'CONTACTED'`, `'QUOTATION'`, `'CONFIRMED'`, `'LOST'`, `'CANCELLED'` |
+| `assigned_to` | BIGINT UNSIGNED | NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Assigned staff member |
+| `source` | VARCHAR(32) | NOT NULL, DEFAULT `'TELEGRAM_REFERRAL'`, INDEX | Enum: `'TELEGRAM_REFERRAL'` |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.11 `lead_notes` (Internal Lead Conversation & Audit Notes)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Note record ID |
+| `lead_id` | BIGINT UNSIGNED | NOT NULL, FK -> `leads(id)`, `ON DELETE CASCADE` | Parent lead |
+| `user_id` | BIGINT UNSIGNED | NOT NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Author staff member |
+| `note` | TEXT | NOT NULL | Note content |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
 
 ---

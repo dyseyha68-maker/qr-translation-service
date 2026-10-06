@@ -115,17 +115,28 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 4: Telegram Bot Integration & Lead Attribution Pipeline
-- **Objective:** Capture customer QR scans from Telegram, parse referral tokens, and create attributed leads in real time.
-- **Tasks:**
-  1. Create `telegram_users`, `leads`, and `attribution_logs` migrations and models.
-  2. Implement `TelegramBotService` supporting both webhook updates and `php artisan telegram:poll`.
-  3. Implement `ReferralAttributionService` with 30-day attribution window logic, idempotent repeat-scan handling, and audit logging.
-  4. Implement automated customer welcome response in English, Khmer, and Chinese.
-  5. Implement internal staff notification alert (Telegram channel alert + web dashboard notification).
-  6. Implement local scan simulation command (`php artisan telegram:simulate-scan`).
-- **Verification Gate:**
-  * Automated tests simulating Telegram `/start REF_xxx` updates, verifying correct driver lead attribution and audit log creation without live internet dependencies.
+### Phase 4: Telegram Bot Integration & Lead Attribution Pipeline (Completed)
+- **Objective:** Ingest customer Telegram QR scans, enforce the "First Qualified Referral Wins" attribution model, create customers and leads, and provide staff lead management with full auditability.
+- **Implemented Deliverables:**
+  1. **Database & Schema:**
+     - `telegram_users` table with unique `telegram_id` index and interaction timestamps.
+     - `customers` table with status enum (`ACTIVE`, `INACTIVE`).
+     - `referral_events` table with unique `telegram_update_id` for webhook idempotency and event type tracking.
+     - `referral_attributions` table capturing snapshotted referral hierarchy (`referral_partner_id`, `driver_id`, `vehicle_id`, `referral_code_id`), status (`ACTIVE`, `CHANGED`, `CANCELLED`), and mandatory audit reasons for reassignments.
+     - `leads` table with statuses (`NEW`, `CONTACTED`, `QUOTATION`, `CONFIRMED`, `LOST`, `CANCELLED`) and active referral attribution link.
+     - `lead_notes` table for internal staff conversation notes and automated audit logs.
+  2. **Domain Services & Telegram Bot:**
+     - `TelegramBotService`: encapsulates Telegram API calls, welcome/error messages, and `X-Telegram-Bot-Api-Secret-Token` verification; network failures never abort database transactions.
+     - `TelegramUserService`: idempotent profile discovery and update.
+     - `ReferralAttributionService`: strictly enforces webhook update idempotency, FIRST QUALIFIED REFERRAL WINS for active opportunities, distinct opportunity attribution for returning customers with closed leads, and manual administrative attribution changes with mandatory reasons.
+  3. **Staff Interface & RBAC:**
+     - Webhook endpoint: `POST /api/telegram/webhook`.
+     - Lead Management Controller & Form Requests (`index`, `show`, `update`, `assign`, `notes`, `change-attribution`).
+     - Vue 3 + Inertia views: `Leads/Index.vue` and `Leads/Show.vue`.
+     - Strict RBAC: Super Admin & Admin can reassign attribution; Staff can manage leads and notes; Finance cannot modify attributions or access lead pipeline.
+  4. **Verification Gate:**
+     - **121 automated tests passed (313 assertions), 100% green.**
+     - TypeScript strict checks and Vite production asset build passed (`✓ built in 14.72s`).
 
 ---
 

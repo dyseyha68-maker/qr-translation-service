@@ -16,6 +16,10 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+use App\Http\Controllers\LeadController;
+use App\Models\Lead;
+use App\Enums\LeadStatus;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -31,6 +35,8 @@ Route::get('/dashboard', function () {
         'activeDriversCount' => Driver::active()->count(),
         'activeVehiclesCount' => Vehicle::active()->count(),
         'activeReferralCodesCount' => ReferralCode::active()->count(),
+        'newLeadsCount' => Lead::where('status', LeadStatus::NEW)->count(),
+        'activeLeadsCount' => Lead::active()->count(),
     ]);
 })->middleware(['auth'])->name('dashboard');
 
@@ -59,6 +65,14 @@ Route::middleware('auth')->group(function () {
     Route::get('referral-codes/{referral_code}/download', [ReferralCodeController::class, 'download'])->name('referral-codes.download');
     Route::get('referral-codes/{referral_code}/print', [ReferralCodeController::class, 'print'])->name('referral-codes.print');
     Route::resource('referral-codes', ReferralCodeController::class);
+
+    // Phase 4: Lead Management & Attribution
+    Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
+    Route::get('leads/{lead}', [LeadController::class, 'show'])->name('leads.show');
+    Route::patch('leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+    Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
+    Route::post('leads/{lead}/notes', [LeadController::class, 'addNote'])->name('leads.notes.store');
+    Route::post('leads/{lead}/change-attribution', [LeadController::class, 'changeAttribution'])->name('leads.change-attribution');
 });
 
 require __DIR__.'/auth.php';

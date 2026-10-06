@@ -25,21 +25,29 @@ TelegramBotService:
 
 ---
 
-## 2. Ingestion Modes: Webhook vs. Polling
+## 2. Webhook Ingestion & Security
 
-To accommodate both local development and secure cloud production environments, the system supports dual ingestion strategies:
+The system processes incoming Telegram updates via HTTPS webhook:
+- **Route:** `POST /api/telegram/webhook`
+- **Controller:** `App\Http\Controllers\TelegramWebhookController`
+- **Security:** Verified with the header `X-Telegram-Bot-Api-Secret-Token` matched against `config('services.telegram.webhook_secret')`.
+- **Idempotency:** Every update ID (`update_id`) is tracked in `referral_events.telegram_update_id`. If Telegram retries a previously delivered update, the webhook acknowledges immediately with no duplicate lead creation.
+- **Fail-Safe Response:** Returns HTTP 200 to Telegram API to prevent repeated retry flooding, while logging any unhandled internal exceptions safely. Outbound Telegram API failures never abort database transactions.
 
-| Mode | Environment | Description |
-| :--- | :--- | :--- |
-| **Long Polling** | Local / Development | Run via artisan command: `php artisan telegram:poll`. Fetches updates via `getUpdates` API. Requires no public IP, SSL certificate, or tunneling tool (e.g. ngrok). |
-| **Webhook** | Production / Staging | Telegram posts updates via HTTPS directly to `POST /api/telegram/webhook`. Fast, event-driven, handles concurrent volume. Secured with secret token verification (`X-Telegram-Bot-Api-Secret-Token`). |
+### Setting up Production Webhook:
+Run Telegram API `setWebhook` endpoint with your bot token and secret token:
+```bash
+curl -F "url=https://your-domain.com/api/telegram/webhook" \
+     -F "secret_token=YOUR_CONFIGURED_WEBHOOK_SECRET" \
+     https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook
+```
 
 ---
 
 ## 3. Bot Command & Message Routing
 
 ### 3.1 The `/start` Deep-Link Handler
-When a user begins the conversation with a referral deep link, Telegram transmits a message containing:
+When a user begins the conversation with a referral deep link, Telegram transmits:
 ```text
 /start REF_TK874M
 ```
@@ -47,15 +55,21 @@ When a user begins the conversation with a referral deep link, Telegram transmit
 #### Processing Steps:
 1. **Payload Extraction:**
    - Command: `/start`
-   - Parameter: `REF_TK874M`
+   - Parameter: `REF_TK874M` (normalized to uppercase)
 2. **Token Verification:**
-   - Query `referral_codes` where `code = 'REF_TK874M'` and `status = 'ACTIVE'`.
-   - If not found or inactive, log unknown referral and proceed as direct inquiry.
+   - Query `referral_codes` where `code = 'REF_TK874M'`.
+   - If not found: records event `UNKNOWN_CODE` and sends invalid referral response.
+   - If inactive: records event `INACTIVE_CODE` and sends disabled code response.
+   - If active: validates hierarchical partner, driver, and vehicle ownership.
 3. **User Profile Registration:**
-   - Upsert `telegram_users` table with `telegram_id`, `first_name`, `last_name`, `username`, and `language_code`.
-4. **Attribution & Lead Creation:**
-   - Execute `ReferralAttributionService::attributeTelegramUser(telegramUser, referralCode)`.
-   - Applies the 30-day window policy and records to `attribution_logs`.
+   - Upsert `telegram_users` table by `telegram_id`, updating `first_name`, `last_name`, `username`, `language_code`, and `last_interaction_at`.
+4. **Attribution & Lead Pipeline:**
+   - Execute `ReferralAttributionService::processWebhookUpdate()`.
+   - Checks for existing active opportunity:
+     - **FIRST QUALIFIED REFERRAL WINS:** If active lead exists, preserves original attribution, records `REPEAT_SCAN`, and keeps existing attribution intact.
+     - If no active lead exists: creates Customer (if needed), creates Lead (`status = NEW`), creates `ReferralAttribution` (`status = ACTIVE`), and attaches attribution to the lead.
+5. **Customer Confirmation:**
+   - Dispatches multi-lingual welcome response via `TelegramBotService`.
 
 ---
 

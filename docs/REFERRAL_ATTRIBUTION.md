@@ -67,19 +67,21 @@ Dispatch Staff Notification & Customer Welcome Message
 - Any order placed and confirmed by this customer within this 30-day window is credited to the referring driver.
 - If an order is created on Day 31 without any new scans, no referral commission is owed (attributed to direct company organic acquisition).
 
-### Policy B: Returning Customers & Multiple Scans (First-Touch vs Last-Touch)
-- **Scenario 1: Customer scans Driver A, places Order 1 within 30 days.**
-  * Result: Driver A receives commission on Order 1.
-- **Scenario 2: Same customer scans Driver B 10 days later, before placing any order.**
-  * **Rule (Last-Touch for Unconverted Leads):** If the customer has not yet confirmed an order, scanning Driver B's QR code shifts attribution to Driver B (since Driver B was the proximate ride that brought the customer in to place the order).
-- **Scenario 3: Customer already completed an order with Driver A, and 2 months later scans Driver B.**
-  * Result: The new scan opens a new 30-day attribution window credited to Driver B for any subsequent orders.
-- **Scenario 4: Duplicate scans by the same user on the same driver within 24 hours.**
-  * Result: **Idempotent.** Do not create duplicate leads. Log the scan in `attribution_logs` and refresh the lead's `last_interaction_at` timestamp.
+### Policy B: Authoritative Model — FIRST QUALIFIED REFERRAL WINS
+- **Scenario 1: Customer scans Driver A QR, active Lead created.**
+  * Result: Attributed to Driver A (`referral_attributions.status = ACTIVE`).
+- **Scenario 2: Same customer scans Driver B while Lead is still active in pipeline.**
+  * **Rule (First Qualified Referral Wins):** Scanning Driver B's QR code does **NOT** overwrite the active opportunity attribution. A `REPEAT_SCAN` referral event is recorded and logged, but Driver A remains the qualified attribution owner for that open opportunity.
+- **Scenario 3: Customer completes or closes their previous lead (Status = CONFIRMED, LOST, or CANCELLED) and later scans Driver B.**
+  * **Rule (New Genuinely Distinct Opportunity):** Because no active lead is open, the new scan attributes a brand-new lead to Driver B. Previous attribution for Lead 1 remains historically unchanged.
+- **Scenario 4: Duplicate scans by the same user on the same driver code.**
+  * **Rule:** Idempotent. Does not create duplicate leads. Records a `REPEAT_SCAN` event and touches `last_interaction_at`.
+- **Scenario 5: Manual Attribution Change by Administrator.**
+  * **Rule:** Authorized Super Admins and Admins may reassign attribution with a **mandatory business reason**. The previous attribution is preserved with status `CHANGED` and timestamped `changed_at`, and a new `ACTIVE` attribution record is created. History is never deleted.
 
 ### Policy C: Direct Customers (No QR Code / Raw `/start`)
-- If a customer opens the Telegram bot without a `start` parameter (direct search), attribution is marked as `DIRECT / ORGANIC` (driver_id = NULL).
-- No commission is calculated or owed.
+- If a customer opens the Telegram bot without a `start` parameter (direct search), a `START` referral event is recorded.
+- No referral lead or commission attribution is created (`driver_id = NULL`).
 
 ---
 

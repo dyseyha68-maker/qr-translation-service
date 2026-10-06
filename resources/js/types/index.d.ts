@@ -118,6 +118,84 @@ export interface ReferralCode {
     };
 }
 
+export interface TelegramUser {
+    id: number;
+    telegram_id: number;
+    username?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    full_name?: string;
+    language_code?: string | null;
+    is_bot: boolean;
+    phone?: string | null;
+    last_interaction_at?: string | null;
+    created_at?: string;
+}
+
+export interface Customer {
+    id: number;
+    telegram_user_id?: number | null;
+    name: string;
+    phone?: string | null;
+    email?: string | null;
+    notes?: string | null;
+    status: 'ACTIVE' | 'INACTIVE';
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface ReferralAttribution {
+    id: number;
+    referral_event_id: number;
+    referral_code_id: number;
+    telegram_user_id?: number | null;
+    customer_id: number;
+    lead_id?: number | null;
+    referral_partner_id: number;
+    driver_id: number;
+    vehicle_id: number;
+    attribution_status: 'ACTIVE' | 'CHANGED' | 'CANCELLED';
+    attributed_at: string;
+    changed_at?: string | null;
+    change_reason?: string | null;
+    created_by?: number | null;
+    referral_code?: ReferralCode | null;
+    driver?: Driver | null;
+    vehicle?: Vehicle | null;
+    referral_partner?: ReferralPartner | null;
+    creator?: User | null;
+}
+
+export interface LeadNote {
+    id: number;
+    lead_id: number;
+    user_id: number;
+    note: string;
+    created_at: string;
+    user?: User | null;
+}
+
+export interface Lead {
+    id: number;
+    customer_id: number;
+    telegram_user_id?: number | null;
+    referral_attribution_id?: number | null;
+    title: string;
+    description?: string | null;
+    service_type?: string | null;
+    status: 'NEW' | 'CONTACTED' | 'QUOTATION' | 'CONFIRMED' | 'LOST' | 'CANCELLED';
+    assigned_to?: number | null;
+    source: 'TELEGRAM_REFERRAL';
+    created_at: string;
+    updated_at: string;
+    customer?: Customer | null;
+    telegram_user?: TelegramUser | null;
+    assigned_user?: User | null;
+    referral_attribution?: ReferralAttribution | null;
+    attributions?: ReferralAttribution[];
+    notes?: LeadNote[];
+}
+
 export interface PaginatedData<T> {
     data: T[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -145,6 +223,8 @@ export type PageProps<
             createVehicles: boolean;
             viewReferralCodes: boolean;
             createReferralCodes: boolean;
+            viewLeads: boolean;
+            changeAttribution: boolean;
         };
     };
     flash: {
@@ -152,3 +232,4 @@ export type PageProps<
         error?: string | null;
     };
 };
+
