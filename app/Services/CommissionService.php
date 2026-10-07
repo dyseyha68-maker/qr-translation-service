@@ -222,6 +222,48 @@ class CommissionService
     }
 
     /**
+     * Adjust the commission rate and recalculate amount for an EARNED commission.
+     * Accessible by Super Admin / Admin with mandatory audit tracking.
+     *
+     * @throws ValidationException
+     */
+    public function adjustCommissionRate(Commission $commission, float $newRate, ?string $reason, User $actor): Commission
+    {
+        return DB::transaction(function () use ($commission, $newRate, $reason, $actor) {
+            /** @var Commission $locked */
+            $locked = Commission::where('id', $commission->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status !== CommissionStatus::EARNED) {
+                throw ValidationException::withMessages([
+                    'status' => "Cannot adjust rate on commission with status '{$locked->status->value}'. Only EARNED commissions can be adjusted.",
+                ]);
+            }
+
+            if ($newRate < 0.0 || $newRate > 100.0) {
+                throw ValidationException::withMessages([
+                    'commission_rate' => 'Commission rate must be between 0% and 100%.',
+                ]);
+            }
+
+            $oldRate = (float) $locked->commission_rate;
+            $oldAmount = (float) $locked->commission_amount;
+            $newAmount = round((float) $locked->eligible_amount * ($newRate / 100), 2);
+
+            $timestamp = Carbon::now()->toDateTimeString();
+            $noteEntry = "[{$timestamp}] Rate adjusted from {$oldRate}% (\${$oldAmount}) to {$newRate}% (\${$newAmount}) by {$actor->name}" . ($reason ? ": {$reason}" : '.');
+            $existingNotes = $locked->adjustment_notes ? $locked->adjustment_notes . "\n" : '';
+
+            $locked->update([
+                'commission_rate' => $newRate,
+                'commission_amount' => $newAmount,
+                'adjustment_notes' => $existingNotes . $noteEntry,
+            ]);
+
+            return $locked->fresh(['order', 'referralPartner', 'driver', 'vehicle', 'approver']);
+        });
+    }
+
+    /**
      * Record disbursement/payout of an APPROVED commission to the partner/driver.
      * Transitions commission status to PAID.
      *

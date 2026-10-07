@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\CommissionPaymentMethod;
 use App\Enums\CommissionStatus;
+use App\Http\Requests\Commission\AdjustCommissionRateRequest;
 use App\Http\Requests\Commission\RecordCommissionPayoutRequest;
 use App\Http\Requests\Commission\ReverseCommissionRequest;
 use App\Models\Commission;
@@ -163,8 +164,24 @@ class CommissionController extends Controller
                 'approve' => request()->user()?->can('approve', $commission) ?? false,
                 'pay' => request()->user()?->can('pay', $commission) ?? false,
                 'reverse' => request()->user()?->can('reverse', $commission) ?? false,
+                'update' => request()->user()?->can('update', $commission) ?? false,
             ],
         ]);
+    }
+
+    /**
+     * Adjust commission rate (%) on an earned commission.
+     */
+    public function adjustRate(AdjustCommissionRateRequest $request, Commission $commission): RedirectResponse
+    {
+        $updated = $this->commissionService->adjustCommissionRate(
+            $commission,
+            (float) $request->validated('commission_rate'),
+            $request->validated('reason'),
+            $request->user()
+        );
+
+        return back()->with('success', "Commission rate updated to {$updated->commission_rate}% (\${$updated->commission_amount}).");
     }
 
     /**

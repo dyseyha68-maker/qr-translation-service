@@ -26,6 +26,15 @@ class CommissionPolicy
         return $user->can(PermissionName::COMMISSIONS_CREATE->value);
     }
 
+    public function update(User $user, Commission $commission): bool
+    {
+        if ($commission->status !== CommissionStatus::EARNED) {
+            return false;
+        }
+
+        return $user->can(PermissionName::COMMISSIONS_UPDATE->value);
+    }
+
     public function approve(User $user, Commission $commission): bool
     {
         if ($commission->status !== CommissionStatus::EARNED) {

@@ -11,16 +11,37 @@ const props = defineProps<{
         approve: boolean;
         pay: boolean;
         reverse: boolean;
+        update?: boolean;
     };
 }>();
 
 const showPayoutModal = ref(false);
 const showReverseModal = ref(false);
+const showAdjustModal = ref(false);
 
 const isEarned = computed(() => ['earned', 'EARNED'].includes(props.commission.status));
 const isApproved = computed(() => ['approved', 'APPROVED'].includes(props.commission.status));
 const isPaid = computed(() => ['paid', 'PAID'].includes(props.commission.status));
 const isReversed = computed(() => ['reversed', 'REVERSED'].includes(props.commission.status));
+
+const adjustForm = useForm({
+    commission_rate: Number(props.commission.commission_rate),
+    reason: '',
+});
+
+const previewAdjustAmount = computed(() => {
+    const rate = Number(adjustForm.commission_rate) || 0;
+    const base = Number(props.commission.eligible_amount) || 0;
+    return (base * (rate / 100)).toFixed(2);
+});
+
+const submitAdjust = () => {
+    adjustForm.patch(route('commissions.adjust-rate', props.commission.id), {
+        onSuccess: () => {
+            showAdjustModal.value = false;
+        },
+    });
+};
 
 onMounted(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -120,6 +141,19 @@ const getStatusBadgeClass = (status: string) => {
 
                 <!-- Action Buttons -->
                 <div class="flex items-center gap-2">
+                    <!-- Adjust Rate Button (Super Admin / Admin) -->
+                    <button
+                        v-if="isEarned && can.update"
+                        @click="showAdjustModal = true"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/60 border border-indigo-200 dark:border-indigo-800 rounded-lg shadow-sm transition-colors"
+                        title="Adjust Commission Rate %"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Adjust Rate (%)
+                    </button>
+
                     <!-- Approve Button -->
                     <button
                         v-if="isEarned && can.approve"
@@ -205,16 +239,25 @@ const getStatusBadgeClass = (status: string) => {
                         </p>
                     </div>
                 </div>
-                <button
-                    v-if="can.approve"
-                    @click="handleApprove"
-                    class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
-                >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    Approve Now
-                </button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button
+                        v-if="can.update"
+                        @click="showAdjustModal = true"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-slate-800 border border-indigo-300 dark:border-indigo-700 rounded-lg shadow-xs transition-colors"
+                    >
+                        Adjust Rate (%)
+                    </button>
+                    <button
+                        v-if="can.approve"
+                        @click="handleApprove"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                    >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Approve Now
+                    </button>
+                </div>
             </div>
 
             <!-- 3. Approved Banner: Ready for Cashier Payout -->
@@ -263,6 +306,20 @@ const getStatusBadgeClass = (status: string) => {
                         Disbursed ${{ Number(commission.commission_amount).toFixed(2) }} to {{ commission.driver?.name || 'the driver' }} on {{ commission.paid_at ? new Date(commission.paid_at).toLocaleString() : 'N/A' }}. See disbursement records below.
                     </p>
                 </div>
+            </div>
+
+            <!-- 5. Rate Adjustment Audit Trail (if modified) -->
+            <div
+                v-if="commission.adjustment_notes"
+                class="p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-300"
+            >
+                <div class="font-bold flex items-center gap-1.5 text-slate-900 dark:text-white mb-2">
+                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Rate Adjustment History
+                </div>
+                <div class="font-mono text-xs whitespace-pre-wrap text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-750">{{ commission.adjustment_notes }}</div>
             </div>
 
             <!-- Top Cards: Financial Breakdown -->
@@ -723,6 +780,97 @@ const getStatusBadgeClass = (status: string) => {
                             class="px-4 py-2 text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm disabled:opacity-50"
                         >
                             Confirm Reversal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Adjust Commission Rate Modal (Super Admin / Admin) -->
+        <div v-if="showAdjustModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md p-6">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-700">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Adjust Commission Rate
+                    </h3>
+                    <button @click="showAdjustModal = false" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+                </div>
+
+                <form @submit.prevent="submitAdjust" class="mt-4 space-y-4">
+                    <div class="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                        <div class="text-xs text-indigo-700 dark:text-indigo-300 font-medium">Eligible Base (Order Total)</div>
+                        <div class="text-xl font-bold font-mono text-indigo-900 dark:text-white mt-0.5">
+                            ${{ Number(commission.eligible_amount).toFixed(2) }}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">New Commission Rate (%) *</label>
+                        <div class="relative">
+                            <input
+                                v-model.number="adjustForm.commission_rate"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="100"
+                                required
+                                class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white font-mono"
+                            />
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400 text-sm font-bold">
+                                %
+                            </div>
+                        </div>
+
+                        <!-- Presets -->
+                        <div class="flex items-center gap-1.5 mt-2">
+                            <span class="text-xs text-slate-400">Presets:</span>
+                            <button
+                                v-for="preset in [0, 3, 5, 7, 10, 15]"
+                                :key="preset"
+                                type="button"
+                                @click="adjustForm.commission_rate = preset"
+                                class="px-2 py-0.5 text-xs rounded border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono transition"
+                            >
+                                {{ preset }}%
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Recalculated Amount -->
+                    <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg flex items-center justify-between">
+                        <span class="text-xs font-medium text-emerald-800 dark:text-emerald-300">Recalculated Commission:</span>
+                        <span class="text-xl font-extrabold font-mono text-emerald-700 dark:text-emerald-400">
+                            ${{ previewAdjustAmount }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Reason / Note (Audit Trail)</label>
+                        <textarea
+                            v-model="adjustForm.reason"
+                            rows="2"
+                            placeholder="e.g. Returning client bulk order rate discount"
+                            class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:text-white"
+                        ></textarea>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+                        <button
+                            type="button"
+                            @click="showAdjustModal = false"
+                            class="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="adjustForm.processing"
+                            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition disabled:opacity-50"
+                        >
+                            Save & Recalculate
                         </button>
                     </div>
                 </form>

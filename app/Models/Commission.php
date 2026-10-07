@@ -32,6 +32,7 @@ class Commission extends Model
         'paid_at',
         'reversed_at',
         'reversal_reason',
+        'adjustment_notes',
         'created_by',
         'approved_by',
         'paid_by',

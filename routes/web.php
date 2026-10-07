@@ -124,6 +124,7 @@ Route::middleware('auth')->group(function () {
     Route::get('commissions', [CommissionController::class, 'index'])->name('commissions.index');
     Route::get('commissions/{commission}', [CommissionController::class, 'show'])->name('commissions.show');
     Route::patch('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
+    Route::patch('commissions/{commission}/adjust-rate', [CommissionController::class, 'adjustRate'])->name('commissions.adjust-rate');
     Route::post('commissions/{commission}/payout', [CommissionController::class, 'recordPayout'])->name('commissions.payout');
     Route::patch('commissions/{commission}/reverse', [CommissionController::class, 'reverse'])->name('commissions.reverse');
     Route::post('orders/{order}/evaluate-commission', [CommissionController::class, 'evaluateOrder'])->name('orders.evaluate-commission');

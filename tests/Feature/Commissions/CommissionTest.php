@@ -501,4 +501,69 @@ class CommissionTest extends TestCase
             ->get(route('commissions.reports'))
             ->assertOk();
     }
+
+    public function test_admin_can_adjust_commission_rate_on_earned_commission(): void
+    {
+        $order = $this->createAttributedOrder(200.00, OrderStatus::CONFIRMED);
+        $this->fullyPayOrder($order);
+
+        $commission = Commission::where('order_id', $order->id)->firstOrFail();
+        $this->assertEquals(10.0, (float) $commission->commission_rate);
+        $this->assertEquals(20.00, (float) $commission->commission_amount);
+
+        // Admin adjusts rate from 10% to 5%
+        $response = $this->actingAs($this->admin)
+            ->patch(route('commissions.adjust-rate', $commission->id), [
+                'commission_rate' => 5.0,
+                'reason' => 'Repeat client negotiated bulk rate',
+            ]);
+
+        $response->assertRedirect()
+            ->assertSessionHas('success');
+
+        $commission->refresh();
+        $this->assertEquals(5.0, (float) $commission->commission_rate);
+        $this->assertEquals(10.00, (float) $commission->commission_amount);
+        $this->assertStringContainsString('Repeat client negotiated bulk rate', (string) $commission->adjustment_notes);
+    }
+
+    public function test_staff_cannot_adjust_commission_rate(): void
+    {
+        $order = $this->createAttributedOrder(100.00, OrderStatus::CONFIRMED);
+        $this->fullyPayOrder($order);
+
+        $commission = Commission::where('order_id', $order->id)->firstOrFail();
+
+        $this->actingAs($this->staff)
+            ->patch(route('commissions.adjust-rate', $commission->id), [
+                'commission_rate' => 5.0,
+                'reason' => 'Unauthorized attempt',
+            ])
+            ->assertForbidden();
+
+        $commission->refresh();
+        $this->assertEquals(10.0, (float) $commission->commission_rate);
+    }
+
+    public function test_cannot_adjust_rate_on_approved_or_paid_commission(): void
+    {
+        $order = $this->createAttributedOrder(100.00, OrderStatus::CONFIRMED);
+        $this->fullyPayOrder($order);
+
+        $commission = Commission::where('order_id', $order->id)->firstOrFail();
+
+        // Approve it first
+        $this->actingAs($this->admin)
+            ->patch(route('commissions.approve', $commission->id));
+
+        $commission->refresh();
+        $this->assertEquals(CommissionStatus::APPROVED, $commission->status);
+
+        // Attempt to adjust rate on approved commission must be rejected
+        $this->actingAs($this->admin)
+            ->patch(route('commissions.adjust-rate', $commission->id), [
+                'commission_rate' => 5.0,
+            ])
+            ->assertForbidden();
+    }
 }

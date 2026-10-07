@@ -304,6 +304,7 @@ export interface Commission {
     reversed_at?: string | null;
     reversed_by?: number | null;
     reversal_reason?: string | null;
+    adjustment_notes?: string | null;
     notes?: string | null;
     created_at: string;
     updated_at: string;
