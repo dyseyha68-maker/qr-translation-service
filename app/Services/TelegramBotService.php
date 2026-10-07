@@ -182,6 +182,102 @@ class TelegramBotService
         return $this->sendMessage($chatId, $message, $keyboard);
     }
 
+    /**
+     * Register the webhook URL with Telegram Bot API.
+     *
+     * @return array<string, mixed>
+     */
+    public function setWebhook(string $url, ?string $secret = null): array
+    {
+        if (empty($this->botToken)) {
+            return ['ok' => false, 'description' => 'TELEGRAM_BOT_TOKEN is not configured in .env'];
+        }
+
+        $params = ['url' => $url];
+        $secretToken = $secret ?? $this->webhookSecret;
+        if (! empty($secretToken)) {
+            $params['secret_token'] = $secretToken;
+        }
+
+        try {
+            $response = Http::timeout(10)
+                ->post("https://api.telegram.org/bot{$this->botToken}/setWebhook", $params);
+
+            return $response->json() ?? ['ok' => false, 'description' => 'Invalid response from Telegram API'];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'description' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get information about the currently configured webhook.
+     *
+     * @return array<string, mixed>
+     */
+    public function getWebhookInfo(): array
+    {
+        if (empty($this->botToken)) {
+            return ['ok' => false, 'description' => 'TELEGRAM_BOT_TOKEN is not configured in .env'];
+        }
+
+        try {
+            $response = Http::timeout(10)
+                ->get("https://api.telegram.org/bot{$this->botToken}/getWebhookInfo");
+
+            return $response->json() ?? ['ok' => false, 'description' => 'Invalid response from Telegram API'];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'description' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Remove the webhook from Telegram Bot API.
+     *
+     * @return array<string, mixed>
+     */
+    public function deleteWebhook(bool $dropPendingUpdates = false): array
+    {
+        if (empty($this->botToken)) {
+            return ['ok' => false, 'description' => 'TELEGRAM_BOT_TOKEN is not configured in .env'];
+        }
+
+        try {
+            $response = Http::timeout(10)
+                ->post("https://api.telegram.org/bot{$this->botToken}/deleteWebhook", [
+                    'drop_pending_updates' => $dropPendingUpdates,
+                ]);
+
+            return $response->json() ?? ['ok' => false, 'description' => 'Invalid response from Telegram API'];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'description' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Fetch updates directly via Telegram getUpdates (long polling).
+     *
+     * @return array<string, mixed>
+     */
+    public function getUpdates(int $offset = 0, int $limit = 100, int $timeout = 10): array
+    {
+        if (empty($this->botToken)) {
+            return ['ok' => false, 'description' => 'TELEGRAM_BOT_TOKEN is not configured in .env'];
+        }
+
+        try {
+            $response = Http::timeout($timeout + 5)
+                ->get("https://api.telegram.org/bot{$this->botToken}/getUpdates", [
+                    'offset' => $offset,
+                    'limit' => $limit,
+                    'timeout' => $timeout,
+                ]);
+
+            return $response->json() ?? ['ok' => false, 'description' => 'Invalid response from Telegram API'];
+        } catch (Throwable $e) {
+            return ['ok' => false, 'description' => $e->getMessage()];
+        }
+    }
+
     public function getBotUsername(): string
     {
         return $this->botUsername;
