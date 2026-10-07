@@ -23,22 +23,24 @@ class PaymentPolicy
         return $user->can(PermissionName::PAYMENTS_VIEW->value);
     }
 
-    public function create(User $user, Order $order): bool
+    public function create(User $user, ?Order $order = null): bool
     {
-        if ($order->status === OrderStatus::CANCELLED) {
-            return false;
-        }
+        if ($order !== null) {
+            if ($order->status === OrderStatus::CANCELLED) {
+                return false;
+            }
 
-        if ($order->outstanding_amount <= 0.0001) {
-            return false;
+            if ($order->outstanding_amount <= 0.0001) {
+                return false;
+            }
         }
 
         return $user->can(PermissionName::PAYMENTS_CREATE->value);
     }
 
-    public function refund(User $user, Payment $payment): bool
+    public function refund(User $user, ?Payment $payment = null): bool
     {
-        if ($payment->status === PaymentRecordStatus::REFUNDED) {
+        if ($payment !== null && $payment->status === PaymentRecordStatus::REFUNDED) {
             return false;
         }
 
