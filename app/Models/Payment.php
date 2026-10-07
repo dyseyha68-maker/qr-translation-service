@@ -50,6 +50,11 @@ class Payment extends Model
         return $this->belongsTo(User::class, 'received_by');
     }
 
+    public function creator(): BelongsTo
+    {
+        return $this->receiver();
+    }
+
     public function refunder(): BelongsTo
     {
         return $this->belongsTo(User::class, 'refunded_by');
