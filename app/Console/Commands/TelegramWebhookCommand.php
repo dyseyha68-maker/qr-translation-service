@@ -18,7 +18,8 @@ class TelegramWebhookCommand extends Command
                             {--set : Register the webhook URL with Telegram}
                             {--delete : Remove the webhook from Telegram}
                             {--info : Display the current webhook status (default)}
-                            {--url= : Explicit webhook URL (defaults to APP_URL/api/telegram/webhook)}';
+                            {--url= : Explicit webhook URL (defaults to APP_URL/api/telegram/webhook)}
+                            {--insecure : Bypass SSL certificate verification for local development}';
 
     /**
      * The console command description.
@@ -29,6 +30,11 @@ class TelegramWebhookCommand extends Command
 
     public function handle(TelegramBotService $botService): int
     {
+        if ($this->option('insecure') || ! config('services.telegram.verify_ssl', true)) {
+            $botService->setVerifySsl(false);
+            $this->warn('⚠️ SSL verification bypassed for local development.');
+        }
+
         $botUsername = $botService->getBotUsername();
         $this->info("🤖 Telegram Bot: @{$botUsername}");
 

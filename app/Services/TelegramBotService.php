@@ -15,6 +15,7 @@ class TelegramBotService
     protected string $botUsername;
     protected ?string $webhookSecret;
     protected string $supportUsername;
+    protected bool $verifySsl;
 
     public function __construct()
     {
@@ -22,6 +23,28 @@ class TelegramBotService
         $this->botUsername = ltrim((string) config('services.telegram.bot_username', 'DinCoTranslationBot'), '@');
         $this->webhookSecret = config('services.telegram.webhook_secret');
         $this->supportUsername = ltrim((string) config('services.telegram.support_username', 'DinCoSupport'), '@');
+        $this->verifySsl = (bool) config('services.telegram.verify_ssl', true);
+    }
+
+    public function setVerifySsl(bool $verify): self
+    {
+        $this->verifySsl = $verify;
+
+        return $this;
+    }
+
+    /**
+     * Create configured HTTP client instance.
+     */
+    protected function httpClient(int $timeout = 10): \Illuminate\Http\Client\PendingRequest
+    {
+        $client = Http::timeout($timeout);
+
+        if (! $this->verifySsl) {
+            $client = $client->withoutVerifying();
+        }
+
+        return $client;
     }
 
     /**
@@ -70,7 +93,7 @@ class TelegramBotService
                 $payload['reply_markup'] = $replyMarkup;
             }
 
-            $response = Http::timeout(5)
+            $response = $this->httpClient(5)
                 ->post("https://api.telegram.org/bot{$this->botToken}/sendMessage", $payload);
 
             if (! $response->successful()) {
@@ -200,7 +223,7 @@ class TelegramBotService
         }
 
         try {
-            $response = Http::timeout(10)
+            $response = $this->httpClient(10)
                 ->post("https://api.telegram.org/bot{$this->botToken}/setWebhook", $params);
 
             return $response->json() ?? ['ok' => false, 'description' => 'Invalid response from Telegram API'];
@@ -221,7 +244,7 @@ class TelegramBotService
         }
 
         try {
-            $response = Http::timeout(10)
+            $response = $this->httpClient(10)
                 ->get("https://api.telegram.org/bot{$this->botToken}/getWebhookInfo");
 
             return $response->json() ?? ['ok' => false, 'description' => 'Invalid response from Telegram API'];
@@ -242,7 +265,7 @@ class TelegramBotService
         }
 
         try {
-            $response = Http::timeout(10)
+            $response = $this->httpClient(10)
                 ->post("https://api.telegram.org/bot{$this->botToken}/deleteWebhook", [
                     'drop_pending_updates' => $dropPendingUpdates,
                 ]);
@@ -265,7 +288,7 @@ class TelegramBotService
         }
 
         try {
-            $response = Http::timeout($timeout + 5)
+            $response = $this->httpClient($timeout + 5)
                 ->get("https://api.telegram.org/bot{$this->botToken}/getUpdates", [
                     'offset' => $offset,
                     'limit' => $limit,

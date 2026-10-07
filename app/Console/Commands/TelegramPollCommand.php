@@ -18,7 +18,8 @@ class TelegramPollCommand extends Command
      */
     protected $signature = 'telegram:poll
                             {--timeout=10 : Polling timeout in seconds}
-                            {--drop-pending : Drop existing unhandled updates before starting}';
+                            {--drop-pending : Drop existing unhandled updates before starting}
+                            {--insecure : Bypass SSL certificate verification for local development}';
 
     /**
      * The console command description.
@@ -29,6 +30,11 @@ class TelegramPollCommand extends Command
 
     public function handle(TelegramBotService $botService, ReferralAttributionService $attributionService): int
     {
+        if ($this->option('insecure') || ! config('services.telegram.verify_ssl', true)) {
+            $botService->setVerifySsl(false);
+            $this->warn('⚠️ SSL verification bypassed for local development.');
+        }
+
         $botUsername = $botService->getBotUsername();
         $this->info("🤖 Starting Telegram Polling for @{$botUsername}...");
         $this->warn('Press Ctrl+C to terminate the polling loop.');
