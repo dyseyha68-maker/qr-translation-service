@@ -73,7 +73,7 @@ const resetFilters = () => {
 };
 
 const getStatusBadgeClass = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
         case 'PAID':
             return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-500/30';
         case 'APPROVED':
@@ -142,7 +142,7 @@ const approveCommission = (commission: Commission) => {
                         ${{ metrics.total_earned }}
                     </div>
                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {{ metrics.counts.EARNED || 0 }} earned, {{ metrics.counts.APPROVED || 0 }} approved
+                        {{ (metrics.counts.earned ?? metrics.counts.EARNED) || 0 }} earned, {{ (metrics.counts.approved ?? metrics.counts.APPROVED) || 0 }} approved
                     </div>
                 </div>
 
@@ -178,7 +178,7 @@ const approveCommission = (commission: Commission) => {
                         ${{ metrics.total_approved }}
                     </div>
                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {{ metrics.counts.APPROVED || 0 }} commissions ready for payout
+                        {{ (metrics.counts.approved ?? metrics.counts.APPROVED) || 0 }} commissions ready for payout
                     </div>
                 </div>
 
@@ -196,7 +196,7 @@ const approveCommission = (commission: Commission) => {
                         ${{ metrics.total_paid }}
                     </div>
                     <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {{ metrics.counts.PAID || 0 }} commissions settled
+                        {{ (metrics.counts.paid ?? metrics.counts.PAID) || 0 }} commissions settled
                     </div>
                 </div>
 
@@ -404,13 +404,21 @@ const approveCommission = (commission: Commission) => {
                                 <td class="py-3.5 px-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-2">
                                         <button
-                                            v-if="c.status === 'EARNED' && $page.props.auth.can.approveCommissions"
+                                            v-if="['earned', 'EARNED'].includes(c.status) && $page.props.auth.can.approveCommissions"
                                             @click="approveCommission(c)"
-                                            class="inline-flex items-center px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-400 dark:hover:bg-blue-900/60 rounded border border-blue-200 dark:border-blue-800 transition-colors"
+                                            class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/60 rounded border border-blue-200 dark:border-blue-800 transition-colors"
                                             title="Approve Commission"
                                         >
                                             Approve
                                         </button>
+                                        <Link
+                                            v-if="['approved', 'APPROVED'].includes(c.status) && $page.props.auth.can.payCommissions"
+                                            :href="route('commissions.show', c.id) + '?action=payout'"
+                                            class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-900/60 rounded border border-emerald-200 dark:border-emerald-800 transition-colors"
+                                            title="Record Driver Payout"
+                                        >
+                                            Payout
+                                        </Link>
                                         <Link
                                             :href="route('commissions.show', c.id)"
                                             class="inline-flex items-center px-2.5 py-1 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 rounded transition-colors"

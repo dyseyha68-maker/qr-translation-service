@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import type { Commission } from '@/types';
 
 const props = defineProps<{
@@ -17,11 +17,23 @@ const props = defineProps<{
 const showPayoutModal = ref(false);
 const showReverseModal = ref(false);
 
+const isEarned = computed(() => ['earned', 'EARNED'].includes(props.commission.status));
+const isApproved = computed(() => ['approved', 'APPROVED'].includes(props.commission.status));
+const isPaid = computed(() => ['paid', 'PAID'].includes(props.commission.status));
+const isReversed = computed(() => ['reversed', 'REVERSED'].includes(props.commission.status));
+
+onMounted(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'payout' && isApproved.value && props.can.pay) {
+        showPayoutModal.value = true;
+    }
+});
+
 const payoutForm = useForm({
-    payment_method: 'CASH',
+    payment_method: props.paymentMethods[0]?.value || 'cash',
     payment_reference: '',
     paid_at: new Date().toISOString().split('T')[0],
-    paid_to: props.commission.driver?.name || '',
+    paid_to: props.commission.driver?.name || props.commission.referral_partner?.name || '',
     notes: '',
 });
 
@@ -54,7 +66,7 @@ const handleApprove = () => {
 };
 
 const getStatusBadgeClass = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
         case 'PAID':
             return 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-500/30';
         case 'APPROVED':
@@ -110,7 +122,7 @@ const getStatusBadgeClass = (status: string) => {
                 <div class="flex items-center gap-2">
                     <!-- Approve Button -->
                     <button
-                        v-if="commission.status === 'EARNED' && can.approve"
+                        v-if="isEarned && can.approve"
                         @click="handleApprove"
                         class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
                     >
@@ -122,7 +134,7 @@ const getStatusBadgeClass = (status: string) => {
 
                     <!-- Payout Button -->
                     <button
-                        v-if="commission.status === 'APPROVED' && can.pay"
+                        v-if="isApproved && can.pay"
                         @click="showPayoutModal = true"
                         class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
                     >
@@ -134,7 +146,7 @@ const getStatusBadgeClass = (status: string) => {
 
                     <!-- Reverse Button -->
                     <button
-                        v-if="(commission.status === 'EARNED' || commission.status === 'APPROVED') && can.reverse"
+                        v-if="(isEarned || isApproved) && can.reverse"
                         @click="showReverseModal = true"
                         class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:text-rose-400 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 rounded-lg transition-colors"
                     >
@@ -158,9 +170,10 @@ const getStatusBadgeClass = (status: string) => {
 
         <div class="py-12">
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
-            <!-- Reversal Banner if reversed -->
+            <!-- Informational Status Banners -->
+            <!-- 1. Reversal Banner if reversed -->
             <div
-                v-if="commission.status === 'REVERSED'"
+                v-if="isReversed"
                 class="p-4 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-800 dark:text-rose-300 text-sm"
             >
                 <div class="font-bold flex items-center gap-2">
@@ -172,6 +185,84 @@ const getStatusBadgeClass = (status: string) => {
                 <p class="mt-1 text-xs">
                     <strong>Reason:</strong> {{ commission.reversal_reason || 'No specific reason provided.' }}
                 </p>
+            </div>
+
+            <!-- 2. Earned Banner: Pending Review / Approval -->
+            <div
+                v-if="isEarned"
+                class="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-900 dark:text-amber-200 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            >
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold">Pending Approval for Driver Payout</div>
+                        <p class="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                            This referral commission is earned. An authorized administrator or manager must review and approve it before driver payout disbursement can be executed.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    v-if="can.approve"
+                    @click="handleApprove"
+                    class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Approve Now
+                </button>
+            </div>
+
+            <!-- 3. Approved Banner: Ready for Cashier Payout -->
+            <div
+                v-if="isApproved"
+                class="p-4 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl text-blue-900 dark:text-blue-200 text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            >
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="font-semibold">Approved — Ready for Driver Disbursement</div>
+                        <p class="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                            Approved on {{ commission.approved_at ? new Date(commission.approved_at).toLocaleString() : 'N/A' }}. Finance / Cashier can now record the payout disbursement of ${{ Number(commission.commission_amount).toFixed(2) }} to {{ commission.driver?.name || 'the driver' }}.
+                        </p>
+                    </div>
+                </div>
+                <button
+                    v-if="can.pay"
+                    @click="showPayoutModal = true"
+                    class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Record Driver Payout
+                </button>
+            </div>
+
+            <!-- 4. Paid Banner: Disbursed -->
+            <div
+                v-if="isPaid"
+                class="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-900 dark:text-emerald-200 text-sm flex items-center gap-3"
+            >
+                <div class="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 shrink-0">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="font-semibold">Payout Settled</div>
+                    <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                        Disbursed ${{ Number(commission.commission_amount).toFixed(2) }} to {{ commission.driver?.name || 'the driver' }} on {{ commission.paid_at ? new Date(commission.paid_at).toLocaleString() : 'N/A' }}. See disbursement records below.
+                    </p>
+                </div>
             </div>
 
             <!-- Top Cards: Financial Breakdown -->
@@ -361,7 +452,7 @@ const getStatusBadgeClass = (status: string) => {
                                 Payout & Disbursement Records
                             </h3>
                             <button
-                                v-if="commission.status === 'APPROVED' && can.pay"
+                                v-if="isApproved && can.pay"
                                 @click="showPayoutModal = true"
                                 class="text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
                             >
@@ -453,7 +544,7 @@ const getStatusBadgeClass = (status: string) => {
                                 <div v-if="commission.approved_by_user" class="text-xs text-slate-500 mt-0.5">
                                     Approved by {{ commission.approved_by_user.name }}
                                 </div>
-                                <div v-else-if="commission.status === 'EARNED'" class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                                <div v-else-if="isEarned" class="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                                     Pending finance/admin review.
                                 </div>
                             </div>
@@ -473,7 +564,7 @@ const getStatusBadgeClass = (status: string) => {
                                 <div v-if="commission.paid_by_user" class="text-xs text-slate-500 mt-0.5">
                                     Disbursed by {{ commission.paid_by_user.name }}
                                 </div>
-                                <div v-else-if="commission.status === 'APPROVED'" class="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
+                                <div v-else-if="isApproved" class="text-xs text-blue-600 dark:text-blue-400 mt-0.5">
                                     Ready for cashier payout.
                                 </div>
                             </div>

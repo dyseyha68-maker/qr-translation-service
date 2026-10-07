@@ -97,6 +97,11 @@ class CommissionController extends Controller
             CommissionStatus::APPROVED->value => (clone $metricsQuery)->where('status', CommissionStatus::APPROVED->value)->count(),
             CommissionStatus::PAID->value => (clone $metricsQuery)->where('status', CommissionStatus::PAID->value)->count(),
             CommissionStatus::REVERSED->value => (clone $metricsQuery)->where('status', CommissionStatus::REVERSED->value)->count(),
+            'PENDING' => (clone $metricsQuery)->where('status', CommissionStatus::PENDING->value)->count(),
+            'EARNED' => (clone $metricsQuery)->where('status', CommissionStatus::EARNED->value)->count(),
+            'APPROVED' => (clone $metricsQuery)->where('status', CommissionStatus::APPROVED->value)->count(),
+            'PAID' => (clone $metricsQuery)->where('status', CommissionStatus::PAID->value)->count(),
+            'REVERSED' => (clone $metricsQuery)->where('status', CommissionStatus::REVERSED->value)->count(),
         ];
 
         return Inertia::render('Commissions/Index', [
