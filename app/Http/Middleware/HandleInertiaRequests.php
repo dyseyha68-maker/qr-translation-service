@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Enums\TelegramEventType;
+use App\Models\ReferralEvent;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -74,6 +76,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+            ],
+            'notifications' => [
+                'latestScanId' => $user ? (ReferralEvent::whereIn('event_type', [TelegramEventType::SCAN, TelegramEventType::REPEAT_SCAN])->max('id') ?? 0) : 0,
             ],
         ];
     }

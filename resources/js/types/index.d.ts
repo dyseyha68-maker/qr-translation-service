@@ -365,5 +365,8 @@ export type PageProps<
         success?: string | null;
         error?: string | null;
     };
+    notifications?: {
+        latestScanId: number;
+    };
 };
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
+import axios from 'axios';
 
 const page = usePage();
 const showingMobileSidebar = ref(false);
@@ -8,7 +9,113 @@ const isCollapsed = ref(false);
 const searchQuery = ref('');
 const searchInputRef = ref<HTMLInputElement | null>(null);
 
-// Initialize collapse state from localStorage
+// QR Scan In-App Notifications State
+export interface ScanNotification {
+    id: number;
+    event_type: string;
+    is_repeat: boolean;
+    type_badge: string;
+    customer_name: string;
+    customer_username?: string | null;
+    driver_name: string;
+    driver_phone?: string | null;
+    vehicle_plate: string;
+    vehicle_type: string;
+    referral_code: string;
+    partner_name?: string | null;
+    lead_id?: number | null;
+    lead_url?: string | null;
+    occurred_at: string;
+    time_ago: string;
+}
+
+const recentScans = ref<ScanNotification[]>([]);
+const unreadScanCount = ref<number>(0);
+const lastSeenScanId = ref<number>(Number(page.props.notifications?.latestScanId || 0));
+const showingScanDrawer = ref(false);
+const activeToastBanners = ref<ScanNotification[]>([]);
+let scanPollTimer: ReturnType<typeof setInterval> | null = null;
+
+// Gentle Web Audio API chime on new scan
+const playNotificationSound = () => {
+    try {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.35);
+    } catch {
+        // AudioContext blocked by browser autoplay policy
+    }
+};
+
+const dismissBanner = (id: number) => {
+    activeToastBanners.value = activeToastBanners.value.filter((b) => b.id !== id);
+};
+
+const markAllRead = () => {
+    unreadScanCount.value = 0;
+};
+
+const fetchScanNotifications = async (initial = false) => {
+    try {
+        const params: Record<string, unknown> = {};
+        if (!initial && lastSeenScanId.value > 0) {
+            params.since_id = lastSeenScanId.value;
+        }
+
+        const response = await axios.get(route('notifications.scans'), { params });
+        const data = response.data;
+
+        if (initial) {
+            if (Array.isArray(data.scans)) {
+                recentScans.value = data.scans;
+                if (data.latest_id) {
+                    lastSeenScanId.value = Number(data.latest_id);
+                }
+            }
+        } else if (data.has_new && Array.isArray(data.new_scans) && data.new_scans.length > 0) {
+            const newItems: ScanNotification[] = data.new_scans;
+
+            // Prepend new items without duplicates
+            for (const item of newItems) {
+                if (!recentScans.value.some((s) => s.id === item.id)) {
+                    recentScans.value.unshift(item);
+                }
+
+                // Add to floating toast banners
+                if (!activeToastBanners.value.some((b) => b.id === item.id)) {
+                    activeToastBanners.value.unshift(item);
+
+                    // Auto dismiss after 10s
+                    setTimeout(() => {
+                        dismissBanner(item.id);
+                    }, 10000);
+                }
+            }
+
+            unreadScanCount.value += newItems.length;
+            if (data.latest_id) {
+                lastSeenScanId.value = Math.max(lastSeenScanId.value, Number(data.latest_id));
+            }
+
+            playNotificationSound();
+        }
+    } catch {
+        // Network failure / guest session expired
+    }
+};
+
+// Lifecycle: setup polling & listeners
 onMounted(() => {
     try {
         const saved = localStorage.getItem('core_sidebar_collapsed');
@@ -21,11 +128,35 @@ onMounted(() => {
 
     // Keyboard shortcut: Ctrl+K or Cmd+K to focus search
     window.addEventListener('keydown', handleKeydown);
+
+    // Initial scan fetch
+    fetchScanNotifications(true);
+
+    // Polling loop every 8 seconds
+    scanPollTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            fetchScanNotifications(false);
+        }
+    }, 8000);
+
+    // Visibility change handler: poll immediately when user returns to tab
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 });
 
 onUnmounted(() => {
     window.removeEventListener('keydown', handleKeydown);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    if (scanPollTimer) {
+        clearInterval(scanPollTimer);
+        scanPollTimer = null;
+    }
 });
+
+const handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+        fetchScanNotifications(false);
+    }
+};
 
 const handleKeydown = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -206,7 +337,206 @@ const navSections = computed<NavSection[]>(() => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased">
+    <div class="min-h-screen bg-[#F8FAFC] dark:bg-[#090D16] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased relative">
+        <!-- ========================================================================= -->
+        <!-- FLOATING REAL-TIME SCAN NOTIFICATION TOAST BANNERS                        -->
+        <!-- ========================================================================= -->
+        <div class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm sm:max-w-md w-full pointer-events-none">
+            <div
+                v-for="banner in activeToastBanners"
+                :key="banner.id"
+                class="pointer-events-auto bg-white/95 dark:bg-[#0E131F]/95 backdrop-blur-md rounded-2xl border-2 border-indigo-500/80 dark:border-indigo-500 p-4 shadow-2xl transition-all animate-in slide-in-from-top-3 duration-300 ring-4 ring-indigo-500/10"
+            >
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm shrink-0">
+                            ⚡
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-black tracking-wide uppercase text-indigo-600 dark:text-indigo-400">
+                                    {{ banner.type_badge }} Detected!
+                                </span>
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-medium">Just now via QR Scan</div>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="dismissBanner(banner.id)"
+                        class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                        title="Dismiss"
+                    >
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="mt-3 text-xs text-slate-700 dark:text-slate-200 space-y-1 bg-slate-50 dark:bg-slate-850 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Customer:</span>
+                        <span class="font-bold text-slate-900 dark:text-white truncate max-w-[200px]">
+                            {{ banner.customer_name }}
+                            <span v-if="banner.customer_username" class="text-indigo-500 font-normal">(@{{ banner.customer_username }})</span>
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Attributed Driver:</span>
+                        <span class="font-semibold text-slate-800 dark:text-slate-200">
+                            {{ banner.driver_name }} ({{ banner.vehicle_plate }})
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-400">Referral Code:</span>
+                        <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                            {{ banner.referral_code }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex items-center justify-end gap-2">
+                    <button
+                        type="button"
+                        @click="dismissBanner(banner.id)"
+                        class="px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition"
+                    >
+                        Dismiss
+                    </button>
+                    <Link
+                        v-if="banner.lead_url"
+                        :href="banner.lead_url"
+                        @click="dismissBanner(banner.id)"
+                        class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition"
+                    >
+                        <span>View Lead #{{ banner.lead_id }}</span>
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </Link>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- SCAN ACTIVITY SLIDE-OVER DRAWER (Activity History)                        -->
+        <!-- ========================================================================= -->
+        <div v-if="showingScanDrawer" class="relative z-50" role="dialog" aria-modal="true">
+            <div
+                @click="showingScanDrawer = false"
+                class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+            ></div>
+
+            <div class="fixed inset-0 overflow-hidden">
+                <div class="absolute inset-0 overflow-hidden">
+                    <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+                        <div class="pointer-events-auto w-screen max-w-md animate-in slide-in-from-right duration-200 bg-white dark:bg-[#0E131F] shadow-2xl flex flex-col border-l border-slate-200 dark:border-slate-800">
+                            <!-- Drawer Header -->
+                            <div class="p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                            <span>QR Scan Activity</span>
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                        </h3>
+                                        <p class="text-xs text-slate-400">Real-time driver referral detections</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        v-if="unreadScanCount > 0"
+                                        type="button"
+                                        @click="markAllRead"
+                                        class="px-2 py-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition"
+                                    >
+                                        Mark read
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="showingScanDrawer = false"
+                                        class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Drawer Body: List of scans -->
+                            <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                                <div v-if="recentScans.length === 0" class="text-center py-16 text-slate-400 text-xs">
+                                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                                        </svg>
+                                    </div>
+                                    <div class="font-semibold text-slate-600 dark:text-slate-300">No scan activity yet</div>
+                                    <div class="text-[11px] text-slate-400 mt-1">Scans via driver QR codes will appear here in real-time.</div>
+                                </div>
+
+                                <div
+                                    v-for="scan in recentScans"
+                                    :key="scan.id"
+                                    class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 hover:border-indigo-400/50 dark:hover:border-indigo-500/50 transition-all space-y-2.5"
+                                >
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span
+                                            :class="[
+                                                scan.is_repeat
+                                                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300 border-amber-200'
+                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 border-emerald-200',
+                                                'px-2 py-0.5 rounded-full font-bold text-[10px] border'
+                                            ]"
+                                        >
+                                            {{ scan.type_badge }}
+                                        </span>
+                                        <span class="text-[11px] text-slate-400">{{ scan.time_ago }}</span>
+                                    </div>
+
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            {{ scan.customer_name }}
+                                            <span v-if="scan.customer_username" class="text-indigo-500 font-normal">(@{{ scan.customer_username }})</span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Driver: <span class="font-medium text-slate-800 dark:text-slate-200">{{ scan.driver_name }}</span>
+                                            <span class="text-slate-400"> ({{ scan.vehicle_plate }})</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between pt-1 border-t border-slate-200/60 dark:border-slate-800/80 text-[11px]">
+                                        <div class="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                                            {{ scan.referral_code }}
+                                        </div>
+                                        <Link
+                                            v-if="scan.lead_url"
+                                            :href="scan.lead_url"
+                                            @click="showingScanDrawer = false"
+                                            class="font-bold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 flex items-center gap-1"
+                                        >
+                                            <span>View Lead</span>
+                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                                            </svg>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ========================================================================= -->
         <!-- MOBILE SIDEBAR OVERLAY / DRAWER                                           -->
         <!-- ========================================================================= -->
@@ -273,7 +603,6 @@ const navSections = computed<NavSection[]>(() => {
                                                 ]"
                                             >
                                                 <div class="flex items-center gap-3">
-                                                    <!-- Icon renderer -->
                                                     <span
                                                         :class="[
                                                             route().current(item.activePattern)
@@ -474,7 +803,6 @@ const navSections = computed<NavSection[]>(() => {
                 <!-- NAVIGATION SECTIONS -->
                 <nav class="flex-1 space-y-5">
                     <div v-for="section in navSections" :key="section.title" class="space-y-1">
-                        <!-- Section Title (only if expanded) -->
                         <div
                             v-if="!isCollapsed"
                             class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 py-1"
@@ -482,7 +810,6 @@ const navSections = computed<NavSection[]>(() => {
                             {{ section.title }}
                         </div>
 
-                        <!-- Section Items -->
                         <ul role="list" class="space-y-1">
                             <li v-for="item in section.items" :key="item.route">
                                 <Link
@@ -499,7 +826,6 @@ const navSections = computed<NavSection[]>(() => {
                                     ]"
                                 >
                                     <div class="flex items-center gap-3 min-w-0">
-                                        <!-- Icon -->
                                         <span
                                             :class="[
                                                 route().current(item.activePattern)
@@ -553,7 +879,6 @@ const navSections = computed<NavSection[]>(() => {
                                         <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
                                     </div>
 
-                                    <!-- Right Badge (only when expanded) -->
                                     <span
                                         v-if="!isCollapsed && item.badge"
                                         :class="[
@@ -573,13 +898,21 @@ const navSections = computed<NavSection[]>(() => {
 
                 <!-- BOTTOM CONTROLS & USER PROFILE -->
                 <div class="mt-auto pt-4 border-t border-slate-200/60 dark:border-slate-800/80 space-y-3">
-                    <!-- Collapse Toggle & Telegram Bot Pill (Core 2.0 Utility Row) -->
+                    <!-- Collapse Toggle & Activity Trigger (Core 2.0 Utility Row) -->
                     <div v-if="!isCollapsed" class="flex items-center justify-between px-1">
-                        <!-- Telegram Bot Status Pill -->
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-slate-850 text-slate-600 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800">
+                        <!-- QR Scan Activity Trigger -->
+                        <button
+                            type="button"
+                            @click="showingScanDrawer = true"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-850 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800 transition"
+                            title="View QR Scan Live Activity"
+                        >
                             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>Bot Active</span>
-                        </div>
+                            <span>Scan Activity</span>
+                            <span v-if="unreadScanCount > 0" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-bounce">
+                                {{ unreadScanCount }}
+                            </span>
+                        </button>
 
                         <!-- Collapse Button -->
                         <button
@@ -595,7 +928,20 @@ const navSections = computed<NavSection[]>(() => {
                     </div>
 
                     <!-- Collapsed Expand Button -->
-                    <div v-else class="flex justify-center">
+                    <div v-else class="flex flex-col items-center gap-2">
+                        <!-- Notification trigger when collapsed -->
+                        <button
+                            type="button"
+                            @click="showingScanDrawer = true"
+                            class="relative w-10 h-10 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 transition"
+                            title="QR Scan Activity"
+                        >
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                            </svg>
+                            <span v-if="unreadScanCount > 0" class="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 absolute top-1 right-1"></span>
+                        </button>
+
                         <button
                             @click="toggleCollapse"
                             type="button"
@@ -614,7 +960,6 @@ const navSections = computed<NavSection[]>(() => {
                         class="p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 hover:bg-slate-100/90 dark:hover:bg-slate-850/90 transition-all duration-150 flex items-center justify-between gap-2.5 shadow-2xs"
                     >
                         <Link :href="route('profile.edit')" class="flex items-center gap-2.5 min-w-0 flex-1 group">
-                            <!-- Avatar with online indicator -->
                             <div class="relative shrink-0">
                                 <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:ring-2 group-hover:ring-indigo-400 transition">
                                     {{ getUserInitials($page.props.auth.user.name) }}
@@ -622,7 +967,6 @@ const navSections = computed<NavSection[]>(() => {
                                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 absolute -bottom-0.5 -right-0.5"></span>
                             </div>
 
-                            <!-- Name & Role -->
                             <div class="min-w-0">
                                 <div class="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                                     {{ $page.props.auth.user.name }}
@@ -635,7 +979,6 @@ const navSections = computed<NavSection[]>(() => {
                             </div>
                         </Link>
 
-                        <!-- Logout Button -->
                         <Link
                             :href="route('logout')"
                             method="post"
@@ -667,7 +1010,7 @@ const navSections = computed<NavSection[]>(() => {
         </aside>
 
         <!-- ========================================================================= -->
-        <!-- MAIN CONTENT CONTAINER (Adjusts padding dynamically based on isCollapsed)  -->
+        <!-- MAIN CONTENT CONTAINER                                                    -->
         <!-- ========================================================================= -->
         <div
             :class="[
@@ -701,20 +1044,60 @@ const navSections = computed<NavSection[]>(() => {
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2.5">
+                    <!-- Notification Bell (Mobile) -->
+                    <button
+                        type="button"
+                        @click="showingScanDrawer = true"
+                        class="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                        title="QR Scan Activity"
+                    >
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                        </svg>
+                        <span v-if="unreadScanCount > 0" class="absolute top-1.5 right-1.5 flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                        </span>
+                    </button>
+
                     <span :class="[getRoleBadgeClass($page.props.auth.user.role), 'px-2 py-0.5 rounded text-[10px] font-bold uppercase border']">
                         {{ $page.props.auth.user.role }}
                     </span>
                 </div>
             </div>
 
-            <!-- Page Heading Slot (Core 2.0 Minimalist Header) -->
+            <!-- Page Heading Slot with Scan Bell Trigger -->
             <header
                 v-if="$slots.header"
                 class="bg-white/70 dark:bg-[#0E131F]/70 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 sticky top-0 z-30 hidden lg:block"
             >
-                <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-                    <slot name="header" />
+                <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <slot name="header" />
+                    </div>
+
+                    <!-- Top Header QR Scan Notification Bell -->
+                    <div class="flex items-center gap-3 shrink-0 ml-4">
+                        <button
+                            type="button"
+                            @click="showingScanDrawer = true"
+                            class="relative flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-850 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200/60 dark:border-slate-800 transition shadow-2xs group"
+                            title="QR Referral Scans"
+                        >
+                            <svg class="w-4 h-4 text-slate-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                            </svg>
+                            <span class="text-xs font-semibold">Scans</span>
+                            <span
+                                v-if="unreadScanCount > 0"
+                                class="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-rose-500 text-white animate-bounce"
+                            >
+                                {{ unreadScanCount }}
+                            </span>
+                            <span v-else class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        </button>
+                    </div>
                 </div>
             </header>
 

@@ -31,6 +31,7 @@ use App\Http\Controllers\PaymentController;
 use App\Models\Commission;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Http\Controllers\ScanNotificationController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -134,6 +135,9 @@ Route::middleware('auth')->group(function () {
     Route::get('reports/export/drivers', [AnalyticsController::class, 'exportDrivers'])->name('reports.export.drivers');
     Route::get('reports/export/commissions', [AnalyticsController::class, 'exportCommissions'])->name('reports.export.commissions');
     Route::get('reports/export/orders', [AnalyticsController::class, 'exportOrders'])->name('reports.export.orders');
+    
+    // In-App QR Scan Notifications
+    Route::get('notifications/scans', [ScanNotificationController::class, 'index'])->name('notifications.scans');
 });
 
 require __DIR__.'/auth.php';
