@@ -136,7 +136,7 @@ class CommissionController extends Controller
 
         $commission->load([
             'order.customer',
-            'order.orderItems',
+            'order.items',
             'order.payments.creator',
             'referralAttribution.referralCode',
             'referralPartner',
