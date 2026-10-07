@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Driver, PaginatedData, ReferralPartner, Vehicle } from '@/types';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps<{
     vehicles: PaginatedData<Vehicle>;
@@ -13,11 +13,33 @@ const props = defineProps<{
         driver_id?: string;
         partner_id?: string;
     };
-    types: string[];
-    statuses: string[];
+    types?: string[];
+    vehicleTypes?: string[];
+    statuses?: string[];
     drivers: Driver[];
-    partners: ReferralPartner[];
+    partners?: ReferralPartner[];
 }>();
+
+const availableTypes = computed(() => {
+    return (props.types && props.types.length > 0)
+        ? props.types
+        : (props.vehicleTypes && props.vehicleTypes.length > 0)
+            ? props.vehicleTypes
+            : ['TAXI', 'TUK_TUK', 'OTHER'];
+});
+
+function formatType(type: string): string {
+    switch (type) {
+        case 'TUK_TUK':
+            return 'Tuk-Tuk';
+        case 'TAXI':
+            return 'Taxi';
+        case 'OTHER':
+            return 'Other';
+        default:
+            return type;
+    }
+}
 
 const search = ref(props.filters.search || '');
 const vehicleType = ref(props.filters.vehicle_type || '');
@@ -100,7 +122,7 @@ function toggleStatus(vehicle: Vehicle) {
                                 class="w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
                             >
                                 <option value="">All Vehicle Types</option>
-                                <option v-for="t in props.types" :key="t" :value="t">{{ t }}</option>
+                                <option v-for="t in availableTypes" :key="t" :value="t">{{ formatType(t) }}</option>
                             </select>
                         </div>
                         <div>

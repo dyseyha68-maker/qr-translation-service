@@ -11,9 +11,31 @@ import { computed } from 'vue';
 const props = defineProps<{
     vehicle: Vehicle;
     drivers: Driver[];
-    types: string[];
-    statuses: string[];
+    types?: string[];
+    vehicleTypes?: string[];
+    statuses?: string[];
 }>();
+
+const availableTypes = computed(() => {
+    return (props.types && props.types.length > 0)
+        ? props.types
+        : (props.vehicleTypes && props.vehicleTypes.length > 0)
+            ? props.vehicleTypes
+            : ['TAXI', 'TUK_TUK', 'OTHER'];
+});
+
+function formatType(type: string): string {
+    switch (type) {
+        case 'TUK_TUK':
+            return 'Tuk-Tuk';
+        case 'TAXI':
+            return 'Taxi';
+        case 'OTHER':
+            return 'Other';
+        default:
+            return type;
+    }
+}
 
 const form = useForm({
     driver_id: props.vehicle.driver_id,
@@ -104,7 +126,7 @@ function submit() {
                                     class="mt-1 block w-full rounded-md border-slate-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 text-sm"
                                     required
                                 >
-                                    <option v-for="t in props.types" :key="t" :value="t">{{ t }}</option>
+                                    <option v-for="t in availableTypes" :key="t" :value="t">{{ formatType(t) }}</option>
                                 </select>
                                 <InputError class="mt-2" :message="form.errors.vehicle_type" />
                             </div>

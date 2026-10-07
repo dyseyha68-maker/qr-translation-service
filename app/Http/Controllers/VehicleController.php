@@ -93,6 +93,7 @@ class VehicleController extends Controller
                 'driver_id' => $driverId ? (int) $driverId : null,
             ],
             'vehicleTypes' => VehicleType::values(),
+            'types' => VehicleType::values(),
             'statuses' => VehicleStatus::values(),
             'can' => [
                 'create_vehicle' => $currentUser->can('create', Vehicle::class),
@@ -118,6 +119,7 @@ class VehicleController extends Controller
 
         return Inertia::render('Vehicles/Create', [
             'drivers' => $activeDrivers,
+            'types' => VehicleType::values(),
             'vehicleTypes' => VehicleType::values(),
             'statuses' => VehicleStatus::values(),
         ]);
@@ -207,6 +209,7 @@ class VehicleController extends Controller
                 'status' => $vehicle->status->value,
             ],
             'drivers' => $drivers,
+            'types' => VehicleType::values(),
             'vehicleTypes' => VehicleType::values(),
             'statuses' => VehicleStatus::values(),
         ]);
