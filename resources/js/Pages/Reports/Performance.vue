@@ -200,7 +200,8 @@ const getExportUrl = (type: 'drivers' | 'commissions' | 'orders') => {
             </div>
         </template>
 
-        <div class="space-y-6">
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
             <!-- Filter Bar with Presets -->
             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <!-- Presets -->
@@ -486,6 +487,7 @@ const getExportUrl = (type: 'drivers' | 'commissions' | 'orders') => {
                     </table>
                 </div>
             </div>
+        </div>
         </div>
     </AuthenticatedLayout>
 </template>

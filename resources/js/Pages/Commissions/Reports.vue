@@ -115,7 +115,8 @@ const resetFilter = () => {
             </div>
         </template>
 
-        <div class="space-y-6">
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
             <!-- Tabs -->
             <div class="flex border-b border-slate-200 dark:border-slate-700">
                 <button
@@ -241,6 +242,7 @@ const resetFilter = () => {
                     </table>
                 </div>
             </div>
+        </div>
         </div>
     </AuthenticatedLayout>
 </template>

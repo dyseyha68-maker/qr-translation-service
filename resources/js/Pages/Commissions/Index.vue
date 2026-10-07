@@ -124,7 +124,8 @@ const approveCommission = (commission: Commission) => {
             </div>
         </template>
 
-        <div class="space-y-6">
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
             <!-- Metrics Summary Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <!-- Total Earned -->
@@ -467,6 +468,7 @@ const approveCommission = (commission: Commission) => {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </AuthenticatedLayout>
 </template>

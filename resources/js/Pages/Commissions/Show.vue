@@ -156,7 +156,8 @@ const getStatusBadgeClass = (status: string) => {
             </div>
         </template>
 
-        <div class="space-y-6">
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-6">
             <!-- Reversal Banner if reversed -->
             <div
                 v-if="commission.status === 'REVERSED'"
@@ -492,6 +493,7 @@ const getStatusBadgeClass = (status: string) => {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
 
         <!-- Payout Modal -->
