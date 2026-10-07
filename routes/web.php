@@ -24,6 +24,7 @@ use App\Enums\CommissionStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentRecordStatus;
 use App\Enums\PaymentStatus;
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -126,6 +127,12 @@ Route::middleware('auth')->group(function () {
     Route::post('commissions/{commission}/payout', [CommissionController::class, 'recordPayout'])->name('commissions.payout');
     Route::patch('commissions/{commission}/reverse', [CommissionController::class, 'reverse'])->name('commissions.reverse');
     Route::post('orders/{order}/evaluate-commission', [CommissionController::class, 'evaluateOrder'])->name('orders.evaluate-commission');
+
+    // Phase 7: Analytics, Reports & CSV Exports
+    Route::get('reports/performance', [AnalyticsController::class, 'index'])->name('reports.performance');
+    Route::get('reports/export/drivers', [AnalyticsController::class, 'exportDrivers'])->name('reports.export.drivers');
+    Route::get('reports/export/commissions', [AnalyticsController::class, 'exportCommissions'])->name('reports.export.commissions');
+    Route::get('reports/export/orders', [AnalyticsController::class, 'exportOrders'])->name('reports.export.orders');
 });
 
 require __DIR__.'/auth.php';

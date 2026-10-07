@@ -102,6 +102,9 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::COMMISSION_PAYMENTS_VIEW->value,
             PermissionName::COMMISSION_PAYMENTS_CREATE->value,
             PermissionName::COMMISSION_PAYMENTS_UPDATE->value,
+            // Phase 7 permissions
+            PermissionName::REPORTS_VIEW->value,
+            PermissionName::REPORTS_EXPORT->value,
         ]);
 
         // 4. Staff: Operational view & intake of leads, drivers, vehicles, codes, orders & recording payments
@@ -155,6 +158,9 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::COMMISSIONS_REPORTS->value,
             PermissionName::COMMISSION_PAYMENTS_VIEW->value,
             PermissionName::COMMISSION_PAYMENTS_CREATE->value,
+            // Phase 7 permissions
+            PermissionName::REPORTS_VIEW->value,
+            PermissionName::REPORTS_EXPORT->value,
         ]);
     }
 }

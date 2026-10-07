@@ -81,6 +81,10 @@ enum PermissionName: string
     case COMMISSION_PAYMENTS_CREATE = 'commission_payments.create';
     case COMMISSION_PAYMENTS_UPDATE = 'commission_payments.update';
 
+    // Phase 7: Analytics, Reports & Exports
+    case REPORTS_VIEW = 'reports.view';
+    case REPORTS_EXPORT = 'reports.export';
+
     /**
      * @return array<string>
      */

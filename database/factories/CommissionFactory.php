@@ -43,7 +43,6 @@ class CommissionFactory extends Factory
             'commission_amount' => $commissionAmount,
             'status' => CommissionStatus::EARNED,
             'earned_at' => Carbon::now(),
-            'notes' => fake()->optional()->sentence(),
         ];
     }
 

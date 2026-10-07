@@ -101,6 +101,15 @@ const page = usePage();
                                     Commissions
                                 </NavLink>
 
+                                <!-- Phase 7 Navigation: Reports & Performance -->
+                                <NavLink
+                                    v-if="$page.props.auth.can.viewReports"
+                                    :href="route('reports.performance')"
+                                    :active="route().current('reports.*')"
+                                >
+                                    Reports
+                                </NavLink>
+
                                 <!-- Phase 1 Navigation: Users -->
                                 <NavLink
                                     v-if="$page.props.auth.can.viewUsers"
@@ -269,6 +278,14 @@ const page = usePage();
                             :active="route().current('commissions.*')"
                         >
                             Commissions
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.can.viewReports"
+                            :href="route('reports.performance')"
+                            :active="route().current('reports.*')"
+                        >
+                            Reports
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink

@@ -356,6 +356,8 @@ export type PageProps<
             payCommissions: boolean;
             reverseCommissions: boolean;
             viewCommissionReports: boolean;
+            viewReports: boolean;
+            exportReports: boolean;
         };
     };
     flash: {
