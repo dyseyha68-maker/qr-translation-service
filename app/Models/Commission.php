@@ -38,6 +38,12 @@ class Commission extends Model
         'reversed_by',
     ];
 
+    protected $appends = [
+        'approved_by_user',
+        'paid_by_user',
+        'reversed_by_user',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -92,14 +98,59 @@ class Commission extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
+    public function approvedBy(): BelongsTo
+    {
+        return $this->approver();
+    }
+
+    public function approvedByUser(): BelongsTo
+    {
+        return $this->approver();
+    }
+
     public function payer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'paid_by');
     }
 
+    public function paidBy(): BelongsTo
+    {
+        return $this->payer();
+    }
+
+    public function paidByUser(): BelongsTo
+    {
+        return $this->payer();
+    }
+
     public function reverser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reversed_by');
+    }
+
+    public function reversedBy(): BelongsTo
+    {
+        return $this->reverser();
+    }
+
+    public function reversedByUser(): BelongsTo
+    {
+        return $this->reverser();
+    }
+
+    public function getApprovedByUserAttribute(): ?User
+    {
+        return $this->approver;
+    }
+
+    public function getPaidByUserAttribute(): ?User
+    {
+        return $this->payer;
+    }
+
+    public function getReversedByUserAttribute(): ?User
+    {
+        return $this->reverser;
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder
