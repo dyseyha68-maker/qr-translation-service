@@ -71,6 +71,16 @@ class Driver extends Model
     }
 
     /**
+     * Commissions historically attributed to this driver.
+     *
+     * @return HasMany<Commission, $this>
+     */
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(Commission::class);
+    }
+
+    /**
      * Determine if driver is active.
      */
     public function isActive(): bool

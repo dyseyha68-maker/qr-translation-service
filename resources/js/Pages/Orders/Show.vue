@@ -332,6 +332,45 @@ const getPaymentStatusBadge = (status: string) => {
                                 <span>Attribution Date: {{ new Date(order.referral_attribution.attributed_at).toLocaleString() }}</span>
                                 <span class="text-emerald-600 dark:text-emerald-400 font-medium">Status: {{ order.referral_attribution.attribution_status }}</span>
                             </div>
+
+                            <!-- Driver Commission Status -->
+                            <div class="md:col-span-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                                <div v-if="order.commission" class="p-3.5 rounded-lg bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-semibold uppercase text-indigo-700 dark:text-indigo-300">Driver Commission</span>
+                                            <span class="text-xs px-2 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                                {{ order.commission.status }}
+                                            </span>
+                                        </div>
+                                        <div class="mt-1 text-sm font-mono font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                                            <span>${{ Number(order.commission.commission_amount).toFixed(2) }}</span>
+                                            <span class="text-xs text-slate-500 font-normal">({{ Number(order.commission.commission_rate).toFixed(1) }}% of ${{ Number(order.commission.eligible_amount).toFixed(2) }})</span>
+                                        </div>
+                                    </div>
+                                    <Link
+                                        :href="route('commissions.show', order.commission.id)"
+                                        class="inline-flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
+                                    >
+                                        View Commission &rarr;
+                                    </Link>
+                                </div>
+                                <div v-else-if="order.status === 'confirmed' || order.status === 'completed'" class="p-3 rounded-lg bg-amber-50/70 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                    <div>
+                                        <span class="text-xs font-semibold text-amber-800 dark:text-amber-400 block">No Commission Recorded Yet</span>
+                                        <span class="text-xs text-slate-500">
+                                            {{ order.payment_status === 'paid' ? 'Order is fully paid and eligible for commission evaluation.' : 'Commission will be generated once order is fully paid.' }}
+                                        </span>
+                                    </div>
+                                    <button
+                                        v-if="order.payment_status === 'paid' && $page.props.auth.can.viewCommissions"
+                                        @click="router.post(route('orders.evaluate-commission', order.id))"
+                                        class="px-3 py-1.5 text-xs font-medium text-amber-900 bg-amber-200 hover:bg-amber-300 rounded-lg transition-colors whitespace-nowrap"
+                                    >
+                                        Evaluate Commission
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div v-else class="text-xs text-slate-400 italic py-6 text-center">

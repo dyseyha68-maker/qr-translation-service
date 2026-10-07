@@ -120,6 +120,12 @@ class PaymentService
                 'notes' => $data['notes'] ?? null,
             ]);
 
+            // Phase 6 Integration: Evaluate commission qualification when order reaches fully paid
+            $freshOrder = $lockedOrder->fresh();
+            if ($freshOrder && $freshOrder->isFullyPaid()) {
+                app(CommissionService::class)->evaluateAndEarnForOrder($freshOrder, $receiver);
+            }
+
             return $payment;
         });
     }
@@ -151,6 +157,12 @@ class PaymentService
                 'refund_reason' => trim($reason),
                 'refunded_by' => $refunder->id,
             ]);
+
+            // Phase 6 Integration: Reverse commission if order is no longer fully paid
+            $freshOrder = $lockedOrder->fresh();
+            if ($freshOrder) {
+                app(CommissionService::class)->handleOrderRefund($freshOrder, $refunder, $reason);
+            }
 
             return $lockedPayment->fresh();
         });

@@ -89,6 +89,11 @@ class ReferralAttribution extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function commission(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Commission::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('attribution_status', ReferralAttributionStatus::ACTIVE);

@@ -62,6 +62,7 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 | `company_name` | VARCHAR(255) | NULL | Registered corporate name |
 | `address` | TEXT | NULL | Physical office or station address |
 | `notes` | TEXT | NULL | Staff operational notes |
+| `commission_rate` | DECIMAL(5, 2) | NOT NULL, DEFAULT `10.00` | Default referral commission percentage (e.g. 10.00%) |
 | `status` | VARCHAR(50) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'` |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
 
@@ -285,35 +286,44 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `driver_id` | BIGINT UNSIGNED | FK -> `drivers(id)`, NOT NULL | Driver to receive commission |
-| `order_id` | BIGINT UNSIGNED | FK -> `orders(id)`, NOT NULL | Eligible paid order |
-| `payment_id` | BIGINT UNSIGNED | FK -> `payments(id)`, NOT NULL | Triggering payment |
-| `commission_type` | ENUM | NOT NULL | `'percentage'`, `'fixed'` |
-| `rate_applied` | DECIMAL(8, 2) | NOT NULL | Snapshot of rate applied (e.g. 10.00%) |
-| `currency` | ENUM('USD','KHR')| NOT NULL | Commission currency |
-| `commission_amount`| DECIMAL(12, 2) | NOT NULL | Final calculated commission |
-| `status` | ENUM | DEFAULT `'pending'` | `'pending'`, `'approved'`, `'paid'`, `'cancelled'` |
-| `payout_id` | BIGINT UNSIGNED | FK -> `commission_payouts(id)`, NULL | Linked payout batch |
-| `approved_by_user_id`| BIGINT UNSIGNED| FK -> `users(id)`, NULL | Finance approver |
+| `commission_reference` | VARCHAR(64) | UNIQUE, NOT NULL | E.g., `COM-2026-000001` |
+| `order_id` | BIGINT UNSIGNED | UNIQUE, NOT NULL, FK -> `orders(id)` | Strict 1:1 relationship with paid order |
+| `referral_attribution_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_attributions(id)` | Snapshot of referral attribution source |
+| `referral_partner_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_partners(id)` | Snapshot of partner entity |
+| `driver_id` | BIGINT UNSIGNED | NOT NULL, FK -> `drivers(id)` | Snapshot of driver beneficiary |
+| `vehicle_id` | BIGINT UNSIGNED | NOT NULL, FK -> `vehicles(id)` | Snapshot of referring vehicle |
+| `commission_rate` | DECIMAL(5, 2) | NOT NULL | Policy percentage at transaction time (e.g., 10.00%) |
+| `eligible_amount` | DECIMAL(12, 2) | NOT NULL | Order base total eligible for commission |
+| `commission_amount` | DECIMAL(12, 2) | NOT NULL | Final calculated commission |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT `'USD'` | Transaction currency |
+| `status` | VARCHAR(32) | NOT NULL, DEFAULT `'earned'`, INDEX | Enum: `'pending'`, `'earned'`, `'approved'`, `'paid'`, `'reversed'` |
+| `earned_at` | TIMESTAMP | NULL, INDEX | Timestamp when commission was earned |
 | `approved_at` | TIMESTAMP | NULL | Approval timestamp |
-| `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
+| `paid_at` | TIMESTAMP | NULL | Disbursement timestamp |
+| `reversed_at` | TIMESTAMP | NULL | Reversal timestamp |
+| `reversal_reason` | TEXT | NULL | Reason for cancellation/refund reversal |
+| `notes` | TEXT | NULL | Administrative remarks |
+| `created_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)` | User or system actor |
+| `approved_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)` | Manager/admin who approved commission |
+| `paid_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)` | Finance user who recorded payout |
+| `reversed_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)` | User who processed reversal |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
 
 ---
 
-### 3.9 `commission_payouts` (Driver Disbursements)
+### 3.9 `commission_payments` (Commission Payout Disbursements)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `payout_reference` | VARCHAR(64) | UNIQUE, NOT NULL | E.g., `PAYOUT-202610-0012` |
-| `driver_id` | BIGINT UNSIGNED | FK -> `drivers(id)`, NOT NULL | Recipient driver |
-| `currency` | ENUM('USD','KHR')| NOT NULL | Payout currency |
-| `total_amount` | DECIMAL(12, 2) | NOT NULL | Total disbursed amount |
-| `payout_method` | ENUM | NOT NULL | `'cash'`, `'bakong_khqr'`, `'aba_transfer'` |
-| `proof_file_path` | VARCHAR(255) | NULL | Uploaded receipt slip / photo |
-| `disbursed_by_user_id`| BIGINT UNSIGNED| FK -> `users(id)`, NOT NULL | Cashier who disbursed funds |
-| `disbursed_at` | TIMESTAMP | NOT NULL | Disbursed date and time |
-| `notes` | TEXT | NULL | Payout notes |
-| `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
+| `commission_id` | BIGINT UNSIGNED | NOT NULL, FK -> `commissions(id)`, `ON DELETE CASCADE` | Linked commission record |
+| `payment_reference` | VARCHAR(64) | UNIQUE, NOT NULL | E.g., `CPAY-2026-000001` or cashier voucher # |
+| `amount` | DECIMAL(12, 2) | NOT NULL | Amount disbursed |
+| `payment_method` | VARCHAR(32) | NOT NULL | Enum: `'cash'`, `'bank_transfer'`, `'other'` |
+| `paid_at` | TIMESTAMP | NOT NULL | Date and time payout was given |
+| `paid_to` | VARCHAR(255) | NOT NULL | Recipient name (driver or representative) |
+| `notes` | TEXT | NULL | Additional disbursement details |
+| `created_by` | BIGINT UNSIGNED | NOT NULL, FK -> `users(id)` | Cashier/finance user recording payout |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
 
 ---
 

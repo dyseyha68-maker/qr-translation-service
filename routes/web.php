@@ -20,11 +20,14 @@ use App\Http\Controllers\LeadController;
 use App\Models\Lead;
 use App\Enums\LeadStatus;
 
+use App\Enums\CommissionStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentRecordStatus;
 use App\Enums\PaymentStatus;
+use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
+use App\Models\Commission;
 use App\Models\Order;
 use App\Models\Payment;
 
@@ -60,6 +63,15 @@ Route::get('/dashboard', function () {
             'fullyPaidOrders' => $orders->where('payment_status', PaymentStatus::PAID)->count(),
             'totalPaidAmount' => round($totalPaid, 2),
             'totalOutstandingAmount' => round($totalOutstanding, 2),
+        ],
+        'commissionsSummary' => [
+            'totalEarned' => round((float) Commission::whereIn('status', [CommissionStatus::EARNED, CommissionStatus::APPROVED, CommissionStatus::PAID])->sum('commission_amount'), 2),
+            'approvedAmount' => round((float) Commission::where('status', CommissionStatus::APPROVED)->sum('commission_amount'), 2),
+            'paidAmount' => round((float) Commission::where('status', CommissionStatus::PAID)->sum('commission_amount'), 2),
+            'outstandingAmount' => round((float) Commission::whereIn('status', [CommissionStatus::EARNED, CommissionStatus::APPROVED])->sum('commission_amount'), 2),
+            'earnedCount' => Commission::where('status', CommissionStatus::EARNED)->count(),
+            'approvedCount' => Commission::where('status', CommissionStatus::APPROVED)->count(),
+            'paidCount' => Commission::where('status', CommissionStatus::PAID)->count(),
         ],
     ]);
 })->middleware(['auth'])->name('dashboard');
@@ -105,6 +117,15 @@ Route::middleware('auth')->group(function () {
     Route::post('orders/{order}/payments', [PaymentController::class, 'store'])->name('orders.payments.store');
     Route::patch('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
     Route::resource('orders', OrderController::class);
+
+    // Phase 6: Commission Management & Driver Payouts
+    Route::get('commissions/reports', [CommissionController::class, 'reports'])->name('commissions.reports');
+    Route::get('commissions', [CommissionController::class, 'index'])->name('commissions.index');
+    Route::get('commissions/{commission}', [CommissionController::class, 'show'])->name('commissions.show');
+    Route::patch('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
+    Route::post('commissions/{commission}/payout', [CommissionController::class, 'recordPayout'])->name('commissions.payout');
+    Route::patch('commissions/{commission}/reverse', [CommissionController::class, 'reverse'])->name('commissions.reverse');
+    Route::post('orders/{order}/evaluate-commission', [CommissionController::class, 'evaluateOrder'])->name('orders.evaluate-commission');
 });
 
 require __DIR__.'/auth.php';

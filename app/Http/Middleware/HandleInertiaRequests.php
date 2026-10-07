@@ -62,6 +62,11 @@ class HandleInertiaRequests extends Middleware
                     'createOrders' => $user?->can('orders.create') ?? false,
                     'viewPayments' => $user?->can('payments.view') ?? false,
                     'refundPayments' => $user?->can('payments.refund') ?? false,
+                    'viewCommissions' => $user?->can('commissions.view') ?? false,
+                    'approveCommissions' => $user?->can('commissions.approve') ?? false,
+                    'payCommissions' => $user?->can('commissions.pay') ?? false,
+                    'reverseCommissions' => $user?->can('commissions.reverse') ?? false,
+                    'viewCommissionReports' => $user?->can('commissions.reports') ?? false,
                 ],
             ],
             'flash' => [

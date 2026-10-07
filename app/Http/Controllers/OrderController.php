@@ -147,6 +147,7 @@ class OrderController extends Controller
             'items',
             'payments.receiver',
             'payments.refunder',
+            'commission',
             'creator',
             'updater',
         ]);

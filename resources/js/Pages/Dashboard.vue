@@ -20,6 +20,15 @@ const props = defineProps<{
         totalPaidAmount: number;
         totalOutstandingAmount: number;
     };
+    commissionsSummary?: {
+        totalEarned: number;
+        approvedAmount: number;
+        paidAmount: number;
+        outstandingAmount: number;
+        earnedCount: number;
+        approvedCount: number;
+        paidCount: number;
+    };
 }>();
 
 const page = usePage();
@@ -252,6 +261,60 @@ const page = usePage();
                                 ${{ Number(props.ordersSummary.totalOutstandingAmount).toFixed(2) }}
                             </div>
                             <span class="text-xs text-slate-400 mt-0.5 block">Total Paid: ${{ Number(props.ordersSummary.totalPaidAmount).toFixed(2) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 6: Commissions & Driver Payouts Metrics -->
+                <div v-if="props.commissionsSummary && $page.props.auth.can.viewCommissions" class="space-y-6">
+                    <div class="border-b border-slate-200 dark:border-slate-800 pb-2 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                                Commissions &amp; Driver Disbursements
+                            </h3>
+                            <p class="text-xs text-slate-500">
+                                Driver referral commission accruals, approvals, and payout records
+                            </p>
+                        </div>
+                        <Link
+                            :href="route('commissions.index')"
+                            class="text-xs font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+                        >
+                            View All Commissions &rarr;
+                        </Link>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-indigo-500 uppercase tracking-wider block">Total Earned</span>
+                            <div class="mt-1 text-2xl font-extrabold font-mono text-slate-900 dark:text-white">
+                                ${{ Number(props.commissionsSummary.totalEarned).toFixed(2) }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">{{ props.commissionsSummary.earnedCount }} pending review</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-blue-500 uppercase tracking-wider block">Approved for Payout</span>
+                            <div class="mt-1 text-2xl font-extrabold font-mono text-blue-600 dark:text-blue-400">
+                                ${{ Number(props.commissionsSummary.approvedAmount).toFixed(2) }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">{{ props.commissionsSummary.approvedCount }} awaiting payout</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-emerald-500 uppercase tracking-wider block">Paid Out</span>
+                            <div class="mt-1 text-2xl font-extrabold font-mono text-emerald-600 dark:text-emerald-400">
+                                ${{ Number(props.commissionsSummary.paidAmount).toFixed(2) }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">{{ props.commissionsSummary.paidCount }} driver disbursements</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-amber-500 uppercase tracking-wider block">Outstanding Liability</span>
+                            <div class="mt-1 text-2xl font-extrabold font-mono text-amber-600 dark:text-amber-400">
+                                ${{ Number(props.commissionsSummary.outstandingAmount).toFixed(2) }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">Earned + approved unpaid</span>
                         </div>
                     </div>
                 </div>

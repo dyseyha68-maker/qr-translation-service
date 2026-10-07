@@ -21,6 +21,7 @@ export interface ReferralPartner {
     company_name?: string | null;
     address?: string | null;
     notes?: string | null;
+    commission_rate?: string | number;
     status: 'ACTIVE' | 'INACTIVE';
     drivers_count?: number;
     drivers?: Driver[];
@@ -258,11 +259,63 @@ export interface Order {
     referral_attribution?: ReferralAttribution | null;
     items?: OrderItem[];
     payments?: Payment[];
+    commission?: Commission | null;
     creator?: User | null;
     updater?: User | null;
     paid_amount: number;
     outstanding_amount: number;
     payment_status: PaymentStatus;
+}
+
+export type CommissionStatus = 'PENDING' | 'EARNED' | 'APPROVED' | 'PAID' | 'REVERSED';
+export type CommissionPaymentMethod = 'CASH' | 'BANK_TRANSFER' | 'OTHER';
+
+export interface CommissionPayment {
+    id: number;
+    commission_id: number;
+    payment_reference: string;
+    amount: string | number;
+    payment_method: CommissionPaymentMethod;
+    paid_at: string;
+    paid_to: string;
+    notes?: string | null;
+    created_by: number;
+    created_at: string;
+    creator?: User | null;
+}
+
+export interface Commission {
+    id: number;
+    order_id: number;
+    referral_attribution_id: number;
+    referral_partner_id: number;
+    driver_id: number;
+    vehicle_id: number;
+    commission_reference: string;
+    eligible_amount: string | number;
+    commission_rate: string | number;
+    commission_amount: string | number;
+    status: CommissionStatus;
+    earned_at?: string | null;
+    approved_at?: string | null;
+    approved_by?: number | null;
+    paid_at?: string | null;
+    paid_by?: number | null;
+    reversed_at?: string | null;
+    reversed_by?: number | null;
+    reversal_reason?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    order?: Order | null;
+    referral_attribution?: ReferralAttribution | null;
+    referral_partner?: ReferralPartner | null;
+    driver?: Driver | null;
+    vehicle?: Vehicle | null;
+    payments?: CommissionPayment[];
+    approved_by_user?: User | null;
+    paid_by_user?: User | null;
+    reversed_by_user?: User | null;
 }
 
 export interface PaginatedData<T> {
@@ -298,6 +351,11 @@ export type PageProps<
             createOrders: boolean;
             viewPayments: boolean;
             refundPayments: boolean;
+            viewCommissions: boolean;
+            approveCommissions: boolean;
+            payCommissions: boolean;
+            reverseCommissions: boolean;
+            viewCommissionReports: boolean;
         };
     };
     flash: {

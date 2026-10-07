@@ -22,6 +22,7 @@ class ReferralPartner extends Model
     protected $fillable = [
         'name',
         'type',
+        'commission_rate',
         'phone',
         'email',
         'company_name',
@@ -38,6 +39,7 @@ class ReferralPartner extends Model
         return [
             'type' => PartnerType::class,
             'status' => PartnerStatus::class,
+            'commission_rate' => 'decimal:2',
         ];
     }
 
@@ -49,6 +51,16 @@ class ReferralPartner extends Model
     public function drivers(): HasMany
     {
         return $this->hasMany(Driver::class);
+    }
+
+    /**
+     * Historical commissions earned by referrals from this partner.
+     *
+     * @return HasMany<Commission, $this>
+     */
+    public function commissions(): HasMany
+    {
+        return $this->hasMany(Commission::class);
     }
 
     /**

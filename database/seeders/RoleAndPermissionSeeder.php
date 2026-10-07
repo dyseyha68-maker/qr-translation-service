@@ -90,6 +90,18 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::PAYMENTS_CREATE->value,
             PermissionName::PAYMENTS_UPDATE->value,
             PermissionName::PAYMENTS_REFUND->value,
+            // Phase 6 permissions
+            PermissionName::COMMISSIONS_VIEW->value,
+            PermissionName::COMMISSIONS_CREATE->value,
+            PermissionName::COMMISSIONS_UPDATE->value,
+            PermissionName::COMMISSIONS_APPROVE->value,
+            PermissionName::COMMISSIONS_PAY->value,
+            PermissionName::COMMISSIONS_REVERSE->value,
+            PermissionName::COMMISSIONS_DELETE->value,
+            PermissionName::COMMISSIONS_REPORTS->value,
+            PermissionName::COMMISSION_PAYMENTS_VIEW->value,
+            PermissionName::COMMISSION_PAYMENTS_CREATE->value,
+            PermissionName::COMMISSION_PAYMENTS_UPDATE->value,
         ]);
 
         // 4. Staff: Operational view & intake of leads, drivers, vehicles, codes, orders & recording payments
@@ -119,9 +131,11 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::ORDERS_UPDATE->value,
             PermissionName::PAYMENTS_VIEW->value,
             PermissionName::PAYMENTS_CREATE->value,
+            // Phase 6 view-only
+            PermissionName::COMMISSIONS_VIEW->value,
         ]);
 
-        // 5. Finance: Orders & Payment view, recording payments, and refunding
+        // 5. Finance: Orders & Payment view, recording payments, refunding, and commission payouts
         $finance = Role::firstOrCreate([
             'name' => RoleName::FINANCE->value,
             'guard_name' => 'web',
@@ -133,6 +147,14 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::PAYMENTS_CREATE->value,
             PermissionName::PAYMENTS_UPDATE->value,
             PermissionName::PAYMENTS_REFUND->value,
+            // Phase 6 finance operations
+            PermissionName::COMMISSIONS_VIEW->value,
+            PermissionName::COMMISSIONS_APPROVE->value,
+            PermissionName::COMMISSIONS_PAY->value,
+            PermissionName::COMMISSIONS_REVERSE->value,
+            PermissionName::COMMISSIONS_REPORTS->value,
+            PermissionName::COMMISSION_PAYMENTS_VIEW->value,
+            PermissionName::COMMISSION_PAYMENTS_CREATE->value,
         ]);
     }
 }

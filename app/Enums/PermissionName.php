@@ -68,6 +68,19 @@ enum PermissionName: string
     case PAYMENTS_UPDATE = 'payments.update';
     case PAYMENTS_REFUND = 'payments.refund';
 
+    // Phase 6: Commission Management
+    case COMMISSIONS_VIEW = 'commissions.view';
+    case COMMISSIONS_CREATE = 'commissions.create';
+    case COMMISSIONS_UPDATE = 'commissions.update';
+    case COMMISSIONS_APPROVE = 'commissions.approve';
+    case COMMISSIONS_PAY = 'commissions.pay';
+    case COMMISSIONS_REVERSE = 'commissions.reverse';
+    case COMMISSIONS_DELETE = 'commissions.delete';
+    case COMMISSIONS_REPORTS = 'commissions.reports';
+    case COMMISSION_PAYMENTS_VIEW = 'commission_payments.view';
+    case COMMISSION_PAYMENTS_CREATE = 'commission_payments.create';
+    case COMMISSION_PAYMENTS_UPDATE = 'commission_payments.update';
+
     /**
      * @return array<string>
      */

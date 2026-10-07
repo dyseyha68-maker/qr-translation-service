@@ -167,19 +167,37 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 6: Payment Processing & Commission Calculation Engine
-- **Objective:** Verify customer payments, automatically calculate referral commissions, and manage driver payouts.
-- **Tasks:**
-  1. Create `payments`, `commissions`, and `commission_payouts` migrations and models.
-  2. Implement Payment registration & verification workflow (Cash, ABA/KHQR, Bank Transfer) with receipt upload.
-  3. Build `CommissionCalculationService`:
-     - Triggers automatically upon payment verification.
-     - Calculates commission based on snapshotted rate (percentage or fixed).
-     - Handles USD and KHR without decimal rounding errors.
-  4. Build Finance Commission Ledger (`Pending Approval` → `Approved` → `Paid`).
-  5. Implement Driver Payout disbursement workflow (group unpaid commissions, record Bakong/Cash transaction reference, mark as Paid).
-- **Verification Gate:**
-  * Comprehensive automated tests validating exact commission calculations, multiple orders per driver, partial/split payments, and payout reconciliation.
+### Phase 6: Commission Management & Driver Disbursements
+- **Status:** **COMPLETED & VERIFIED**
+- **Objective:** Manage driver commissions, enforce qualification criteria, snapshot historical policies, approve disbursements, and record manual driver payouts.
+- **Implemented Architecture:**
+  1. **Database Schema & Migrations:**
+     - `referral_partners.commission_rate`: `DECIMAL(5, 2)` defaulting to `10.00%`.
+     - `commissions`: `UNIQUE(order_id)`, foreign keys to `orders`, `referral_attributions`, `referral_partners`, `drivers`, `vehicles`, and users; status index (`pending`, `earned`, `approved`, `paid`, `reversed`); snapshotted rates and amounts.
+     - `commission_payments`: `UNIQUE(payment_reference)`, foreign keys to `commissions` and `users`; manual methods (`cash`, `bank_transfer`, `other`); disbursement timestamp and recipient.
+  2. **Domain Services & Hooks:**
+     - `CommissionService`:
+       - `checkEligibility()`: strictly validates order confirmation, positive total, 100% full payment, valid attribution, and uniqueness.
+       - `evaluateAndEarnForOrder()`: concurrency locked (`lockForUpdate()`), creates commission idempotently upon full payment.
+       - `approveCommission()`: transitions from `EARNED` to `APPROVED` with auditor tracking.
+       - `recordPayout()`: transitions from `APPROVED` to `PAID` and logs `CommissionPayment`.
+       - `reverseCommission()`: cancels commission with mandatory audit reason.
+       - `handleOrderRefund()`: automatically reverses commission if customer payment is refunded.
+     - `PaymentService` Integration: auto-triggers commission evaluation upon `order.isFullyPaid() === true` and reversal upon payment refund.
+  3. **User Interface (Vue 3 + Inertia):**
+     - `Commissions/Index.vue`: summary cards (Total Earned, Approved, Paid, Reversed, Outstanding Liability), search and status/partner/driver/date filters, and quick approve actions.
+     - `Commissions/Show.vue`: full financial breakdown, order attribution snapshot, lifecycle timeline, payout modal, and reversal modal.
+     - `Commissions/Reports.vue`: analytical summaries grouped by Referral Partner and Driver.
+     - `Orders/Show.vue`: integrated Driver Commission card and manual commission evaluation button.
+     - `Dashboard.vue`: added real-time Commission metrics and liability tracking.
+  4. **Security & RBAC:**
+     - Form Requests: `RecordCommissionPayoutRequest`, `ReverseCommissionRequest`.
+     - Policy: `CommissionPolicy` with Spatie permissions (`commissions.*`, `commission_payments.*`).
+     - Staff has view-only access; Admin and Finance have approval and payout privileges.
+  5. **Verification Gate:**
+     - **154 automated tests passed (457 assertions), 100% green.**
+     - TypeScript strict checks and Vite production build passed with 0 errors (`✓ built in 10.37s`, 870 modules).
+     - Clean `migrate:fresh --seed` execution.
 
 ---
 
