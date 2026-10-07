@@ -140,15 +140,30 @@ Phase 6: Reporting, Polish & Production Readiness
 
 ---
 
-### Phase 5: Customer Lead & Order Management (Staff Portal)
-- **Objective:** Provide counter staff with an intuitive lead pipeline and convert leads into confirmed translation orders.
-- **Tasks:**
-  1. Build Lead Inbox and Kanban board (`New`, `Contacted`, `Quoted`, `Converted`, `Lost`).
-  2. Implement "Convert Lead to Order" modal/workflow carrying forward customer and referring driver metadata.
-  3. Create `orders` migration and model with service category, language pairs, document count, quoted price, and currency (USD/KHR).
-  4. Build Order management views (Order list, filtering, order detail page, status updates).
-- **Verification Gate:**
-  * Automated tests for lead status transitions, order creation with driver linkage, and attribution lock-in.
+### Phase 5: Orders & Customer Payment Tracking (Completed)
+- **Objective:** Convert qualified leads into confirmed translation orders with immutable referral attribution preservation, record customer payments across payment methods, calculate outstanding balances, and determine full payment readiness.
+- **Implemented Deliverables:**
+  1. **Database & Schema:**
+     - `orders` table with collision-resistant order numbers (`ORD-YYYY-XXXXXX`), immutable `referral_attribution_id` binding, status enum (`pending`, `confirmed`, `completed`, `cancelled`), and `DECIMAL(15, 2)` monetary precision.
+     - `order_items` table with line item descriptions, unit prices, quantities, and subtotals.
+     - `payments` table supporting manual counter methods (`cash`, `bank_transfer`, `khqr_manual`, `other`), unique transaction references (`PAY-YYYY-XXXXXX`), overpayment prevention, and non-destructive refund auditing.
+  2. **Domain Services:**
+     - `OrderService`: generates unique order numbers with row locking, calculates item totals and validates discounts server-side, enforces `lead.referral_attribution_id -> order.referral_attribution_id` copying, prevents duplicate active orders per lead, and validates status transitions (`PENDING -> CONFIRMED -> COMPLETED`).
+     - `PaymentService`: validates positive non-overpaying amounts, applies database concurrency locking (`Order::lockForUpdate()`), records customer payments, handles payment refunds with reasons and staff auditing, and recalculates order settlement state.
+  3. **User Interface (Vue 3 + Inertia):**
+     - `Orders/Index.vue`: multi-filter search by order number, customer, driver, order status, payment status, partner, and date range.
+     - `Orders/Create.vue`: pre-populated from Lead with read-only attribution card, dynamic line items, real-time total calculation, and server-validated discount.
+     - `Orders/Show.vue`: full order details, line items table, financial metrics, payment recording modal, and payment history ledger with refund actions.
+     - `Leads/Show.vue`: integrated Order & Payment fulfillment card with 1-click "Convert to Order" / "View Order" navigation.
+     - `Dashboard.vue`: added real-time Order pipeline counts and Payment fulfillment / outstanding balance metrics.
+  4. **Security & RBAC:**
+     - Form Requests: `StoreOrderRequest`, `UpdateOrderRequest`, `RecordPaymentRequest`, `RefundPaymentRequest`.
+     - Policies: `OrderPolicy` and `PaymentPolicy`.
+     - Staff can view/create orders and record payments. Finance can view/record payments and execute refunds. Zero client trust on `referral_attribution_id`.
+  5. **Verification Gate:**
+     - **137 automated tests passed (382 assertions), 100% green.**
+     - TypeScript strict checks and Vite production asset build passed (`✓ built in 22.80s`, 864 modules).
+     - Clean `migrate:fresh --seed` execution.
 
 ---
 

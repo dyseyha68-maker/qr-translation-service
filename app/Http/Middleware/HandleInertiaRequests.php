@@ -58,6 +58,10 @@ class HandleInertiaRequests extends Middleware
                     'createReferralCodes' => $user?->can('referral_codes.create') ?? false,
                     'viewLeads' => $user?->can('leads.view') ?? false,
                     'changeAttribution' => $user?->can('leads.change_attribution') ?? false,
+                    'viewOrders' => $user?->can('orders.view') ?? false,
+                    'createOrders' => $user?->can('orders.create') ?? false,
+                    'viewPayments' => $user?->can('payments.view') ?? false,
+                    'refundPayments' => $user?->can('payments.refund') ?? false,
                 ],
             ],
             'flash' => [

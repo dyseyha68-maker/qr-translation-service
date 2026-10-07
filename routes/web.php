@@ -20,6 +20,14 @@ use App\Http\Controllers\LeadController;
 use App\Models\Lead;
 use App\Enums\LeadStatus;
 
+use App\Enums\OrderStatus;
+use App\Enums\PaymentRecordStatus;
+use App\Enums\PaymentStatus;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
+use App\Models\Order;
+use App\Models\Payment;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -30,6 +38,11 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    $orders = Order::with('payments')->get();
+    $totalPaid = (float) Payment::where('status', PaymentRecordStatus::PAID->value)->sum('amount');
+    $totalOutstanding = (float) $orders->whereIn('status', [OrderStatus::PENDING, OrderStatus::CONFIRMED])
+        ->sum(fn (Order $o) => $o->outstanding_amount);
+
     return Inertia::render('Dashboard', [
         'activePartnersCount' => ReferralPartner::active()->count(),
         'activeDriversCount' => Driver::active()->count(),
@@ -37,6 +50,17 @@ Route::get('/dashboard', function () {
         'activeReferralCodesCount' => ReferralCode::active()->count(),
         'newLeadsCount' => Lead::where('status', LeadStatus::NEW)->count(),
         'activeLeadsCount' => Lead::active()->count(),
+        'ordersSummary' => [
+            'newOrders' => $orders->where('status', OrderStatus::PENDING)->count(),
+            'confirmedOrders' => $orders->where('status', OrderStatus::CONFIRMED)->count(),
+            'completedOrders' => $orders->where('status', OrderStatus::COMPLETED)->count(),
+            'cancelledOrders' => $orders->where('status', OrderStatus::CANCELLED)->count(),
+            'unpaidOrders' => $orders->where('payment_status', PaymentStatus::UNPAID)->count(),
+            'partiallyPaidOrders' => $orders->where('payment_status', PaymentStatus::PARTIAL)->count(),
+            'fullyPaidOrders' => $orders->where('payment_status', PaymentStatus::PAID)->count(),
+            'totalPaidAmount' => round($totalPaid, 2),
+            'totalOutstandingAmount' => round($totalOutstanding, 2),
+        ],
     ]);
 })->middleware(['auth'])->name('dashboard');
 
@@ -73,6 +97,14 @@ Route::middleware('auth')->group(function () {
     Route::post('leads/{lead}/assign', [LeadController::class, 'assign'])->name('leads.assign');
     Route::post('leads/{lead}/notes', [LeadController::class, 'addNote'])->name('leads.notes.store');
     Route::post('leads/{lead}/change-attribution', [LeadController::class, 'changeAttribution'])->name('leads.change-attribution');
+
+    // Phase 5: Orders & Customer Payment Tracking
+    Route::patch('orders/{order}/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
+    Route::patch('orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::patch('orders/{order}/complete', [OrderController::class, 'complete'])->name('orders.complete');
+    Route::post('orders/{order}/payments', [PaymentController::class, 'store'])->name('orders.payments.store');
+    Route::patch('payments/{payment}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
+    Route::resource('orders', OrderController::class);
 });
 
 require __DIR__.'/auth.php';

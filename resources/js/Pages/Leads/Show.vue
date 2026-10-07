@@ -15,6 +15,7 @@ const props = defineProps<{
         assign: boolean;
         addNote: boolean;
         changeAttribution: boolean;
+        createOrder?: boolean;
     };
 }>();
 
@@ -260,6 +261,89 @@ const getStatusBadge = (status: string) => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Phase 5: Order & Customer Payment Tracking Card -->
+                <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <span>📑</span> Order &amp; Payment Tracking
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Customer order fulfillment and payment status linked to this inquiry
+                            </p>
+                        </div>
+                        <div v-if="!lead.order && can.createOrder && lead.status !== 'CANCELLED'">
+                            <Link
+                                :href="route('orders.create', { lead_id: lead.id })"
+                                class="inline-flex items-center rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 shadow-xs transition"
+                            >
+                                + Convert to Order
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div v-if="lead.order" class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                            <span class="text-xs font-semibold uppercase text-slate-400 block">Order Number</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <Link
+                                    :href="route('orders.show', lead.order.id)"
+                                    class="text-base font-bold font-mono text-blue-600 dark:text-blue-400 hover:underline"
+                                >
+                                    {{ lead.order.order_number }}
+                                </Link>
+                                <span :class="getStatusBadge(lead.order.status.toUpperCase())" class="px-2 py-0.5 rounded text-[10px] font-bold uppercase">
+                                    {{ lead.order.status }}
+                                </span>
+                            </div>
+                            <span class="text-xs text-slate-400 block mt-1">
+                                {{ lead.order.items?.length ?? 0 }} line item(s)
+                            </span>
+                        </div>
+
+                        <div class="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                            <span class="text-xs font-semibold uppercase text-slate-400 block">Order Total</span>
+                            <div class="text-lg font-bold font-mono text-slate-900 dark:text-white mt-1">
+                                ${{ Number(lead.order.total_amount).toFixed(2) }}
+                            </div>
+                            <span class="text-xs text-slate-400 block mt-1" v-if="Number(lead.order.discount) > 0">
+                                Discount: -${{ Number(lead.order.discount).toFixed(2) }}
+                            </span>
+                        </div>
+
+                        <div class="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                            <span class="text-xs font-semibold uppercase text-slate-400 block">Payment Fulfillment</span>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400">
+                                    ${{ Number(lead.order.paid_amount).toFixed(2) }}
+                                </span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" :class="lead.order.payment_status === 'paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'">
+                                    {{ lead.order.payment_status }}
+                                </span>
+                            </div>
+                            <span class="text-xs text-slate-400 block mt-1">
+                                Outstanding: ${{ Number(lead.order.outstanding_amount).toFixed(2) }}
+                            </span>
+                        </div>
+
+                        <div class="flex items-center justify-end p-3.5">
+                            <Link
+                                :href="route('orders.show', lead.order.id)"
+                                class="inline-flex items-center rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:bg-blue-950/60 dark:border-blue-900 dark:text-blue-300 transition"
+                            >
+                                View Order Details &rarr;
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div v-else class="mt-4 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
+                        No translation order has been generated for this lead yet.
+                        <span v-if="can.createOrder && lead.status !== 'CANCELLED'">
+                            Click "Convert to Order" above to create an order and record payments.
+                        </span>
                     </div>
                 </div>
 

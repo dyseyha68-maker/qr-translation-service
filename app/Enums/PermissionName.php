@@ -54,6 +54,20 @@ enum PermissionName: string
     case LEADS_ADD_NOTE = 'leads.add_note';
     case CUSTOMERS_VIEW = 'customers.view';
 
+    // Phase 5: Orders & Customer Payments
+    case ORDERS_VIEW = 'orders.view';
+    case ORDERS_CREATE = 'orders.create';
+    case ORDERS_UPDATE = 'orders.update';
+    case ORDERS_CONFIRM = 'orders.confirm';
+    case ORDERS_CANCEL = 'orders.cancel';
+    case ORDERS_COMPLETE = 'orders.complete';
+    case ORDERS_DELETE = 'orders.delete';
+
+    case PAYMENTS_VIEW = 'payments.view';
+    case PAYMENTS_CREATE = 'payments.create';
+    case PAYMENTS_UPDATE = 'payments.update';
+    case PAYMENTS_REFUND = 'payments.refund';
+
     /**
      * @return array<string>
      */

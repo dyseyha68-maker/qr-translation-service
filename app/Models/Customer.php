@@ -46,6 +46,11 @@ class Customer extends Model
         return $this->hasMany(ReferralAttribution::class);
     }
 
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', CustomerStatus::ACTIVE);

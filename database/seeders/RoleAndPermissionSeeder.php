@@ -78,9 +78,21 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::LEADS_CHANGE_ATTRIBUTION->value,
             PermissionName::LEADS_ADD_NOTE->value,
             PermissionName::CUSTOMERS_VIEW->value,
+            // Phase 5 permissions
+            PermissionName::ORDERS_VIEW->value,
+            PermissionName::ORDERS_CREATE->value,
+            PermissionName::ORDERS_UPDATE->value,
+            PermissionName::ORDERS_CONFIRM->value,
+            PermissionName::ORDERS_CANCEL->value,
+            PermissionName::ORDERS_COMPLETE->value,
+            PermissionName::ORDERS_DELETE->value,
+            PermissionName::PAYMENTS_VIEW->value,
+            PermissionName::PAYMENTS_CREATE->value,
+            PermissionName::PAYMENTS_UPDATE->value,
+            PermissionName::PAYMENTS_REFUND->value,
         ]);
 
-        // 4. Staff: Operational view & intake of leads, drivers, vehicles, codes
+        // 4. Staff: Operational view & intake of leads, drivers, vehicles, codes, orders & recording payments
         $staff = Role::firstOrCreate([
             'name' => RoleName::STAFF->value,
             'guard_name' => 'web',
@@ -101,15 +113,26 @@ class RoleAndPermissionSeeder extends Seeder
             PermissionName::LEADS_ASSIGN->value,
             PermissionName::LEADS_ADD_NOTE->value,
             PermissionName::CUSTOMERS_VIEW->value,
+            // Phase 5 staff operations
+            PermissionName::ORDERS_VIEW->value,
+            PermissionName::ORDERS_CREATE->value,
+            PermissionName::ORDERS_UPDATE->value,
+            PermissionName::PAYMENTS_VIEW->value,
+            PermissionName::PAYMENTS_CREATE->value,
         ]);
 
-        // 5. Finance: Dashboard access only in Phase 2
+        // 5. Finance: Orders & Payment view, recording payments, and refunding
         $finance = Role::firstOrCreate([
             'name' => RoleName::FINANCE->value,
             'guard_name' => 'web',
         ]);
         $finance->syncPermissions([
             PermissionName::DASHBOARD_VIEW->value,
+            PermissionName::ORDERS_VIEW->value,
+            PermissionName::PAYMENTS_VIEW->value,
+            PermissionName::PAYMENTS_CREATE->value,
+            PermissionName::PAYMENTS_UPDATE->value,
+            PermissionName::PAYMENTS_REFUND->value,
         ]);
     }
 }

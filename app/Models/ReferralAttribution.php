@@ -84,6 +84,11 @@ class ReferralAttribution extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function orders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('attribution_status', ReferralAttributionStatus::ACTIVE);

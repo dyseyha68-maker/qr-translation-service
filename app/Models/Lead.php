@@ -66,6 +66,16 @@ class Lead extends Model
         return $this->hasMany(LeadNote::class)->orderByDesc('created_at');
     }
 
+    public function order(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Order::class)->latestOfMany();
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->whereIn('status', LeadStatus::activeValues());

@@ -224,43 +224,59 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 
 ---
 
-### 3.6 `orders` (Confirmed Translation Jobs)
+### 3.6 `orders` (Confirmed Translation Orders)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `order_number` | VARCHAR(32) | UNIQUE, NOT NULL | E.g., `ORD-202610-0042` |
-| `lead_id` | BIGINT UNSIGNED | FK -> `leads(id)`, NULL | Originating lead |
-| `telegram_user_id` | BIGINT UNSIGNED | FK -> `telegram_users(id)`, NULL | Customer profile |
-| `customer_name` | VARCHAR(255) | NOT NULL | Customer name on invoice |
-| `customer_phone` | VARCHAR(50) | NULL | Phone number |
-| `driver_id` | BIGINT UNSIGNED | FK -> `drivers(id)`, NULL | Attributed driver (locked) |
-| `service_category` | VARCHAR(100) | NOT NULL | E.g., Legal, Notarized, Visa, General |
-| `source_language` | VARCHAR(50) | NOT NULL | E.g., Khmer, Chinese, English, French |
-| `target_language` | VARCHAR(50) | NOT NULL | Target language |
-| `page_count` | INT UNSIGNED | DEFAULT 1 | Total pages/documents |
-| `currency` | ENUM('USD','KHR')| DEFAULT `'USD'` | Transaction currency |
-| `total_amount` | DECIMAL(12, 2) | NOT NULL | Total quoted price |
-| `exchange_rate` | DECIMAL(10, 4) | DEFAULT 4100.0000 | KHR/USD rate at time of order |
-| `status` | ENUM | DEFAULT `'draft'` | `'draft'`, `'confirmed'`, `'in_translation'`, `'completed'`, `'cancelled'` |
-| `due_date` | DATE | NULL | Delivery promise date |
-| `created_by_user_id`| BIGINT UNSIGNED | FK -> `users(id)`, NOT NULL | Staff who opened order |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Order ID |
+| `order_number` | VARCHAR(32) | UNIQUE, NOT NULL, INDEX | Human-readable identifier (e.g. `ORD-2026-000001`) |
+| `customer_id` | BIGINT UNSIGNED | NOT NULL, FK -> `customers(id)`, `ON DELETE RESTRICT` | Associated customer |
+| `lead_id` | BIGINT UNSIGNED | NULL, FK -> `leads(id)`, `ON DELETE SET NULL`, INDEX | Originating lead |
+| `referral_attribution_id` | BIGINT UNSIGNED | NULL, FK -> `referral_attributions(id)`, `ON DELETE RESTRICT`, INDEX | Permanent referral attribution binding |
+| `status` | VARCHAR(32) | NOT NULL, DEFAULT `'pending'`, INDEX | Enum: `'pending'`, `'confirmed'`, `'cancelled'`, `'completed'` |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT `'USD'` | Transaction currency |
+| `subtotal` | DECIMAL(15, 2) | NOT NULL | Calculated sum of line items |
+| `discount` | DECIMAL(15, 2) | NOT NULL, DEFAULT `0.00` | Discount applied to order |
+| `total_amount` | DECIMAL(15, 2) | NOT NULL, INDEX | Net payable: `subtotal - discount` |
+| `notes` | TEXT | NULL | Special instructions or remarks |
+| `confirmed_at` | TIMESTAMP | NULL | Confirmation timestamp |
+| `completed_at` | TIMESTAMP | NULL | Completion timestamp |
+| `cancelled_at` | TIMESTAMP | NULL | Cancellation timestamp |
+| `created_by` | BIGINT UNSIGNED | NOT NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Staff who created the order |
+| `updated_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Last staff member who modified order |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
+
+---
+
+### 3.7 `order_items` (Order Line Items & Service Pricing)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Item ID |
+| `order_id` | BIGINT UNSIGNED | NOT NULL, FK -> `orders(id)`, `ON DELETE CASCADE` | Parent order |
+| `description` | VARCHAR(255) | NOT NULL | Service / document description |
+| `quantity` | INT UNSIGNED | NOT NULL, DEFAULT 1 | Number of units / pages |
+| `unit_price` | DECIMAL(15, 2) | NOT NULL | Unit price per document/page |
+| `subtotal` | DECIMAL(15, 2) | NOT NULL | Line subtotal: `quantity * unit_price` |
+| `notes` | VARCHAR(500) | NULL | Item-level notes |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
 
 ---
 
-### 3.7 `payments` (Customer Payments & Inflows)
+### 3.8 `payments` (Customer Payments & Manual KHQR Records)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
-| `order_id` | BIGINT UNSIGNED | FK -> `orders(id)`, NOT NULL | Related order |
-| `payment_reference`| VARCHAR(64) | UNIQUE, NOT NULL | Slip number or TX ID |
-| `payment_method` | ENUM | NOT NULL | `'cash'`, `'aba_khqr'`, `'bank_transfer'`, `'other'` |
-| `currency` | ENUM('USD','KHR')| NOT NULL | Currency paid |
-| `amount` | DECIMAL(12, 2) | NOT NULL | Amount paid |
-| `status` | ENUM | DEFAULT `'pending'` | `'pending'`, `'verified'`, `'rejected'`, `'refunded'` |
-| `receipt_slip_path`| VARCHAR(255) | NULL | Uploaded bank slip image |
-| `verified_by_user_id`| BIGINT UNSIGNED| FK -> `users(id)`, NULL | Cashier/Finance user |
-| `verified_at` | TIMESTAMP | NULL | Verification timestamp |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Payment ID |
+| `order_id` | BIGINT UNSIGNED | NOT NULL, FK -> `orders(id)`, `ON DELETE RESTRICT`, INDEX | Associated order |
+| `payment_reference` | VARCHAR(64) | UNIQUE, NOT NULL, INDEX | Unique transaction ref (e.g. `PAY-2026-000001`) |
+| `amount` | DECIMAL(15, 2) | NOT NULL | Validated payment amount (no overpayments allowed) |
+| `currency` | VARCHAR(3) | NOT NULL, DEFAULT `'USD'` | Payment currency |
+| `payment_method` | VARCHAR(32) | NOT NULL | Enum: `'cash'`, `'bank_transfer'`, `'khqr_manual'`, `'other'` |
+| `status` | VARCHAR(32) | NOT NULL, DEFAULT `'paid'`, INDEX | Enum: `'paid'`, `'refunded'` |
+| `paid_at` | TIMESTAMP | NOT NULL, INDEX | Transaction settlement date/time |
+| `received_by` | BIGINT UNSIGNED | NOT NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Cashier/staff who received payment |
+| `notes` | TEXT | NULL | Staff remarks / manual bank receipt note |
+| `refunded_at` | TIMESTAMP | NULL | Timestamp of refund |
+| `refund_reason` | TEXT | NULL | Audit reason for refund |
+| `refunded_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Finance user who processed refund |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Timestamps |
 
 ---

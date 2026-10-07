@@ -82,6 +82,8 @@ class LeadController extends Controller
             'attributions.vehicle',
             'attributions.creator',
             'notes.user',
+            'order.payments',
+            'order.items',
         ]);
 
         /** @var User $currentUser */
@@ -106,6 +108,7 @@ class LeadController extends Controller
                 'assign' => $currentUser->can('assign', $lead),
                 'addNote' => $currentUser->can('addNote', $lead),
                 'changeAttribution' => $canChangeAttribution,
+                'createOrder' => $currentUser->can('orders.create'),
             ],
         ]);
     }

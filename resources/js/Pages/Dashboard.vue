@@ -9,6 +9,17 @@ const props = defineProps<{
     activeReferralCodesCount?: number;
     newLeadsCount?: number;
     activeLeadsCount?: number;
+    ordersSummary?: {
+        newOrders: number;
+        confirmedOrders: number;
+        completedOrders: number;
+        cancelledOrders: number;
+        unpaidOrders: number;
+        partiallyPaidOrders: number;
+        fullyPaidOrders: number;
+        totalPaidAmount: number;
+        totalOutstandingAmount: number;
+    };
 }>();
 
 const page = usePage();
@@ -159,6 +170,88 @@ const page = usePage();
                             <Link :href="route('vehicles.index')" class="text-xs font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400">
                                 View Vehicles &rarr;
                             </Link>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 5: Orders & Payments Metrics -->
+                <div v-if="props.ordersSummary" class="space-y-6">
+                    <div class="border-b border-slate-200 dark:border-slate-800 pb-2">
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                            Orders &amp; Payment Fulfillment
+                        </h3>
+                        <p class="text-xs text-slate-500">
+                            Real-time order pipeline and customer payment reconciliation
+                        </p>
+                    </div>
+
+                    <!-- Order Status Counts -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">Pending Orders</span>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {{ props.ordersSummary.newOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">Awaiting confirmation</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider block">Confirmed Orders</span>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {{ props.ordersSummary.confirmedOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">In translation</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Completed</span>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {{ props.ordersSummary.completedOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">Delivered</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">Cancelled</span>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {{ props.ordersSummary.cancelledOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">Voided</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Tracking Metrics -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-rose-500 uppercase tracking-wider block">Unpaid Orders</span>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {{ props.ordersSummary.unpaidOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">$0 collected</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-amber-500 uppercase tracking-wider block">Partially Paid</span>
+                            <div class="mt-1 text-2xl font-extrabold text-slate-900 dark:text-white">
+                                {{ props.ordersSummary.partiallyPaidOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">Deposit received</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-emerald-500 uppercase tracking-wider block">Fully Paid Orders</span>
+                            <div class="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                                {{ props.ordersSummary.fullyPaidOrders }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">100% collected</span>
+                        </div>
+
+                        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Outstanding Balance</span>
+                            <div class="mt-1 text-2xl font-extrabold font-mono text-rose-600 dark:text-rose-400">
+                                ${{ Number(props.ordersSummary.totalOutstandingAmount).toFixed(2) }}
+                            </div>
+                            <span class="text-xs text-slate-400 mt-0.5 block">Total Paid: ${{ Number(props.ordersSummary.totalPaidAmount).toFixed(2) }}</span>
                         </div>
                     </div>
                 </div>

@@ -194,6 +194,75 @@ export interface Lead {
     referral_attribution?: ReferralAttribution | null;
     attributions?: ReferralAttribution[];
     notes?: LeadNote[];
+    order?: Order | null;
+}
+
+export type OrderStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type PaymentMethod = 'cash' | 'bank_transfer' | 'khqr_manual' | 'other';
+export type PaymentStatus = 'unpaid' | 'partial' | 'paid' | 'refunded';
+export type PaymentRecordStatus = 'paid' | 'refunded';
+
+export interface OrderItem {
+    id: number;
+    order_id: number;
+    description: string;
+    quantity: number;
+    unit_price: string | number;
+    subtotal: string | number;
+    notes?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface Payment {
+    id: number;
+    order_id: number;
+    payment_reference: string;
+    amount: string | number;
+    currency: string;
+    payment_method: PaymentMethod;
+    status: PaymentRecordStatus;
+    paid_at: string;
+    received_by: number;
+    receiver?: User | null;
+    notes?: string | null;
+    refunded_at?: string | null;
+    refund_reason?: string | null;
+    refunded_by?: number | null;
+    refunder?: User | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Order {
+    id: number;
+    order_number: string;
+    customer_id: number;
+    lead_id?: number | null;
+    referral_attribution_id?: number | null;
+    status: OrderStatus;
+    currency: string;
+    subtotal: string | number;
+    discount: string | number;
+    total_amount: string | number;
+    notes?: string | null;
+    confirmed_at?: string | null;
+    completed_at?: string | null;
+    cancelled_at?: string | null;
+    created_by: number;
+    updated_by?: number | null;
+    created_at: string;
+    updated_at: string;
+    customer?: Customer | null;
+    lead?: Lead | null;
+    referral_attribution?: ReferralAttribution | null;
+    items?: OrderItem[];
+    payments?: Payment[];
+    creator?: User | null;
+    updater?: User | null;
+    paid_amount: number;
+    outstanding_amount: number;
+    payment_status: PaymentStatus;
 }
 
 export interface PaginatedData<T> {
@@ -225,6 +294,10 @@ export type PageProps<
             createReferralCodes: boolean;
             viewLeads: boolean;
             changeAttribution: boolean;
+            viewOrders: boolean;
+            createOrders: boolean;
+            viewPayments: boolean;
+            refundPayments: boolean;
         };
     };
     flash: {

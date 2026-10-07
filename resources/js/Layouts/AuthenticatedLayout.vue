@@ -83,6 +83,15 @@ const page = usePage();
                                     Leads
                                 </NavLink>
 
+                                <!-- Phase 5 Navigation: Orders -->
+                                <NavLink
+                                    v-if="$page.props.auth.can.viewOrders"
+                                    :href="route('orders.index')"
+                                    :active="route().current('orders.*')"
+                                >
+                                    Orders
+                                </NavLink>
+
                                 <!-- Phase 1 Navigation: Users -->
                                 <NavLink
                                     v-if="$page.props.auth.can.viewUsers"
@@ -235,6 +244,14 @@ const page = usePage();
                             :active="route().current('leads.*')"
                         >
                             Leads
+                        </ResponsiveNavLink>
+
+                        <ResponsiveNavLink
+                            v-if="$page.props.auth.can.viewOrders"
+                            :href="route('orders.index')"
+                            :active="route().current('orders.*')"
+                        >
+                            Orders
                         </ResponsiveNavLink>
 
                         <ResponsiveNavLink
