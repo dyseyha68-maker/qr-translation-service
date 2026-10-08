@@ -5,9 +5,7 @@ import axios from 'axios';
 
 const page = usePage();
 const showingMobileSidebar = ref(false);
-const isCollapsed = ref(false);
-const searchQuery = ref('');
-const searchInputRef = ref<HTMLInputElement | null>(null);
+const isHovered = ref(false);
 
 // QR Scan In-App Notifications State
 export interface ScanNotification {
@@ -117,18 +115,6 @@ const fetchScanNotifications = async (initial = false) => {
 
 // Lifecycle: setup polling & listeners
 onMounted(() => {
-    try {
-        const saved = localStorage.getItem('core_sidebar_collapsed');
-        if (saved !== null) {
-            isCollapsed.value = saved === 'true';
-        }
-    } catch {
-        // LocalStorage disabled or SSR
-    }
-
-    // Keyboard shortcut: Ctrl+K or Cmd+K to focus search
-    window.addEventListener('keydown', handleKeydown);
-
     // Initial scan fetch
     fetchScanNotifications(true);
 
@@ -144,7 +130,6 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-    window.removeEventListener('keydown', handleKeydown);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     if (scanPollTimer) {
         clearInterval(scanPollTimer);
@@ -155,25 +140,6 @@ onUnmounted(() => {
 const handleVisibilityChange = () => {
     if (document.visibilityState === 'visible') {
         fetchScanNotifications(false);
-    }
-};
-
-const handleKeydown = (e: KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        if (isCollapsed.value) {
-            isCollapsed.value = false;
-        }
-        searchInputRef.value?.focus();
-    }
-};
-
-const toggleCollapse = () => {
-    isCollapsed.value = !isCollapsed.value;
-    try {
-        localStorage.setItem('core_sidebar_collapsed', String(isCollapsed.value));
-    } catch {
-        // Ignore
     }
 };
 
@@ -320,17 +286,10 @@ const navSections = computed<NavSection[]>(() => {
         },
     ];
 
-    // Filter by permissions and search query
-    const q = searchQuery.value.trim().toLowerCase();
-
     return sections
         .map((sec) => ({
             ...sec,
-            items: sec.items.filter((item) => {
-                if (item.permission !== undefined && !item.permission) return false;
-                if (!q) return true;
-                return item.label.toLowerCase().includes(q);
-            }),
+            items: sec.items.filter((item) => item.permission === undefined || item.permission),
         }))
         .filter((sec) => sec.items.length > 0);
 });
@@ -686,7 +645,7 @@ const navSections = computed<NavSection[]>(() => {
                                 title="Log Out"
                             >
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                 </svg>
                             </Link>
                         </div>
@@ -696,24 +655,26 @@ const navSections = computed<NavSection[]>(() => {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- DESKTOP FIXED LEFT SIDEBAR (Core 2.0 Dashboard Builder Style)              -->
+        <!-- DESKTOP FIXED LEFT SIDEBAR (Auto Collapse/Expand on Hover)                -->
         <!-- ========================================================================= -->
         <aside
+            @mouseenter="isHovered = true"
+            @mouseleave="isHovered = false"
             :class="[
-                isCollapsed ? 'w-20' : 'w-72',
+                isHovered ? 'w-72 shadow-2xl' : 'w-20 shadow-xs',
                 'hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:flex-col transition-all duration-300 ease-in-out border-r border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0E131F]'
             ]"
         >
             <div class="flex grow flex-col overflow-y-auto px-4 pb-4">
-                <!-- TOP WORKSPACE SELECTOR PILL -->
+                <!-- TOP WORKSPACE SELECTOR -->
                 <div class="pt-4 pb-3">
-                    <!-- Expanded Workspace Pill -->
+                    <!-- Expanded Workspace Pill (on hover) -->
                     <div
-                        v-if="!isCollapsed"
-                        class="p-2 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 hover:bg-slate-100/90 dark:hover:bg-slate-850/90 transition-all duration-150 flex items-center justify-between group cursor-default shadow-2xs"
+                        v-if="isHovered"
+                        class="p-2 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 transition-all duration-150 flex items-center justify-between group cursor-default shadow-2xs"
                     >
                         <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0 group-hover:scale-102 transition-transform">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                 </svg>
@@ -731,16 +692,9 @@ const navSections = computed<NavSection[]>(() => {
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Selector Icon -->
-                        <div class="p-1 text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
-                            </svg>
-                        </div>
                     </div>
 
-                    <!-- Collapsed Workspace Icon -->
+                    <!-- Collapsed Workspace Icon (default) -->
                     <div v-else class="flex justify-center">
                         <Link
                             :href="route('dashboard')"
@@ -754,57 +708,11 @@ const navSections = computed<NavSection[]>(() => {
                     </div>
                 </div>
 
-                <!-- CORE 2.0 SEARCH / QUICK JUMP PILL -->
-                <div class="mb-3">
-                    <div
-                        v-if="!isCollapsed"
-                        class="relative flex items-center rounded-xl bg-slate-100/80 dark:bg-slate-900/80 border border-slate-200/50 dark:border-slate-800/80 px-3 py-1.5 focus-within:bg-white dark:focus-within:bg-slate-850 focus-within:border-indigo-500 dark:focus-within:border-indigo-500 focus-within:shadow-xs transition"
-                    >
-                        <svg class="w-4 h-4 text-slate-400 shrink-0 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                        </svg>
-                        <input
-                            ref="searchInputRef"
-                            v-model="searchQuery"
-                            type="text"
-                            placeholder="Quick search..."
-                            class="w-full bg-transparent p-0 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 border-none focus:ring-0 focus:outline-none"
-                        />
-                        <button
-                            v-if="searchQuery"
-                            @click="searchQuery = ''"
-                            type="button"
-                            class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 ml-1"
-                        >
-                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                        <div v-else class="pointer-events-none flex items-center gap-0.5 pl-1.5">
-                            <kbd class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-slate-200/70 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">⌘K</kbd>
-                        </div>
-                    </div>
-
-                    <!-- Collapsed Search Button -->
-                    <div v-else class="flex justify-center">
-                        <button
-                            @click="toggleCollapse"
-                            type="button"
-                            class="w-10 h-10 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white transition"
-                            title="Search menu (Ctrl+K)"
-                        >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
                 <!-- NAVIGATION SECTIONS -->
-                <nav class="flex-1 space-y-5">
+                <nav class="flex-1 space-y-4">
                     <div v-for="section in navSections" :key="section.title" class="space-y-1">
                         <div
-                            v-if="!isCollapsed"
+                            v-if="isHovered"
                             class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 py-1"
                         >
                             {{ section.title }}
@@ -814,12 +722,12 @@ const navSections = computed<NavSection[]>(() => {
                             <li v-for="item in section.items" :key="item.route">
                                 <Link
                                     :href="route(item.route)"
-                                    :title="isCollapsed ? item.label : undefined"
+                                    :title="!isHovered ? item.label : undefined"
                                     :class="[
                                         route().current(item.activePattern)
                                             ? 'bg-slate-900 text-white dark:bg-indigo-600 dark:text-white shadow-xs font-semibold'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/90 dark:hover:bg-slate-850/80 hover:text-slate-900 dark:hover:text-white font-medium',
-                                        isCollapsed
+                                        !isHovered
                                             ? 'justify-center px-0 h-11 w-11 mx-auto'
                                             : 'justify-between px-3.5 py-2.5 w-full',
                                         'group flex items-center rounded-2xl text-[13px] transition-all duration-150'
@@ -876,11 +784,11 @@ const navSections = computed<NavSection[]>(() => {
                                             </svg>
                                         </span>
 
-                                        <span v-if="!isCollapsed" class="truncate">{{ item.label }}</span>
+                                        <span v-if="isHovered" class="truncate">{{ item.label }}</span>
                                     </div>
 
                                     <span
-                                        v-if="!isCollapsed && item.badge"
+                                        v-if="isHovered && item.badge"
                                         :class="[
                                             route().current(item.activePattern)
                                                 ? 'bg-white/20 text-white'
@@ -896,67 +804,11 @@ const navSections = computed<NavSection[]>(() => {
                     </div>
                 </nav>
 
-                <!-- BOTTOM CONTROLS & USER PROFILE -->
-                <div class="mt-auto pt-4 border-t border-slate-200/60 dark:border-slate-800/80 space-y-3">
-                    <!-- Collapse Toggle & Activity Trigger (Core 2.0 Utility Row) -->
-                    <div v-if="!isCollapsed" class="flex items-center justify-between px-1">
-                        <!-- QR Scan Activity Trigger -->
-                        <button
-                            type="button"
-                            @click="showingScanDrawer = true"
-                            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-850 hover:bg-slate-200/80 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/50 dark:border-slate-800 transition"
-                            title="View QR Scan Live Activity"
-                        >
-                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span>Scan Activity</span>
-                            <span v-if="unreadScanCount > 0" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-rose-500 text-white animate-bounce">
-                                {{ unreadScanCount }}
-                            </span>
-                        </button>
-
-                        <!-- Collapse Button -->
-                        <button
-                            @click="toggleCollapse"
-                            type="button"
-                            class="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-                            title="Collapse sidebar"
-                        >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- Collapsed Expand Button -->
-                    <div v-else class="flex flex-col items-center gap-2">
-                        <!-- Notification trigger when collapsed -->
-                        <button
-                            type="button"
-                            @click="showingScanDrawer = true"
-                            class="relative w-10 h-10 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 transition"
-                            title="QR Scan Activity"
-                        >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-                            </svg>
-                            <span v-if="unreadScanCount > 0" class="w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 absolute top-1 right-1"></span>
-                        </button>
-
-                        <button
-                            @click="toggleCollapse"
-                            type="button"
-                            class="w-10 h-10 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition"
-                            title="Expand sidebar"
-                        >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <!-- USER PROFILE CARD (Expanded) -->
+                <!-- BOTTOM USER PROFILE -->
+                <div class="mt-auto pt-4 border-t border-slate-200/60 dark:border-slate-800/80">
+                    <!-- USER PROFILE CARD (Expanded on hover) -->
                     <div
-                        v-if="!isCollapsed"
+                        v-if="isHovered"
                         class="p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 hover:bg-slate-100/90 dark:hover:bg-slate-850/90 transition-all duration-150 flex items-center justify-between gap-2.5 shadow-2xs"
                     >
                         <Link :href="route('profile.edit')" class="flex items-center gap-2.5 min-w-0 flex-1 group">
@@ -992,7 +844,7 @@ const navSections = computed<NavSection[]>(() => {
                         </Link>
                     </div>
 
-                    <!-- USER PROFILE (Collapsed) -->
+                    <!-- USER PROFILE (Collapsed by default) -->
                     <div v-else class="flex justify-center">
                         <Link
                             :href="route('profile.edit')"
@@ -1010,14 +862,9 @@ const navSections = computed<NavSection[]>(() => {
         </aside>
 
         <!-- ========================================================================= -->
-        <!-- MAIN CONTENT CONTAINER                                                    -->
+        <!-- MAIN CONTENT CONTAINER (Offset by collapsed rail w-20 on desktop)         -->
         <!-- ========================================================================= -->
-        <div
-            :class="[
-                isCollapsed ? 'lg:pl-20' : 'lg:pl-72',
-                'flex flex-col flex-1 min-w-0 transition-all duration-300 ease-in-out'
-            ]"
-        >
+        <div class="lg:pl-20 flex flex-col flex-1 min-w-0">
             <!-- Mobile Top Navbar -->
             <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0E131F]/95 backdrop-blur-md px-4 sm:px-6 lg:hidden">
                 <div class="flex items-center gap-3">
