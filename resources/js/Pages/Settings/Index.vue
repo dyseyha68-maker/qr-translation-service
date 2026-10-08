@@ -32,6 +32,7 @@ const { theme, setTheme } = useTheme();
 
 const logoInputRef = ref<HTMLInputElement | null>(null);
 const logoPreviewUrl = ref<string | null>(props.branding.systemLogo);
+const previewLoadFailed = ref(false);
 
 const form = useForm<{
     brand_name: string;
@@ -48,6 +49,7 @@ const onFileSelected = (event: Event) => {
     if (target.files && target.files[0]) {
         const file = target.files[0];
         form.logo = file;
+        previewLoadFailed.value = false;
         logoPreviewUrl.value = URL.createObjectURL(file);
     }
 };
@@ -214,8 +216,9 @@ const submitSettings = () => {
                                 <!-- Logo Preview Box -->
                                 <div class="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/60 p-2 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                                     <img
-                                        v-if="logoPreviewUrl"
+                                        v-if="logoPreviewUrl && !previewLoadFailed"
                                         :src="logoPreviewUrl"
+                                        @error="previewLoadFailed = true"
                                         alt="Logo preview"
                                         class="max-w-full max-h-full object-contain"
                                     />

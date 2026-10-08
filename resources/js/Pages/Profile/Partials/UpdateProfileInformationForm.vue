@@ -102,6 +102,7 @@ const submitForm = () => {
                         <img
                             v-if="avatarPreview"
                             :src="avatarPreview"
+                            @error="avatarPreview = null"
                             alt="Avatar"
                             class="w-16 h-16 rounded-2xl object-cover ring-2 ring-indigo-500/30 shadow-xs"
                         />

@@ -178,7 +178,7 @@ function submit() {
                             <InputLabel value="Profile Photo / User Logo" class="mb-2" />
                             <div class="flex items-center gap-4">
                                 <div class="w-16 h-16 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
-                                    <img v-if="avatarPreview" :src="avatarPreview" class="w-full h-full object-cover" />
+                                    <img v-if="avatarPreview" :src="avatarPreview" @error="avatarPreview = null" class="w-full h-full object-cover" />
                                     <span v-else class="text-slate-400 text-xs font-bold">No Photo</span>
                                 </div>
                                 <div class="space-y-1">

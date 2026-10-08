@@ -34,7 +34,7 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): ?string
     {
         if ($this->avatar_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->avatar_path)) {
-            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar_path);
+            return '/storage/'.ltrim($this->avatar_path, '/');
         }
 
         return null;

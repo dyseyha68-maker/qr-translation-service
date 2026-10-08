@@ -52,6 +52,8 @@ const unreadScanCount = ref<number>(0);
 const lastSeenScanId = ref<number>(Number(page.props.notifications?.latestScanId || 0));
 const showingScanDrawer = ref(false);
 const activeToastBanners = ref<ScanNotification[]>([]);
+const logoError = ref(false);
+const avatarError = ref(false);
 let scanPollTimer: ReturnType<typeof setInterval> | null = null;
 
 // Gentle Web Audio API chime on new scan
@@ -559,8 +561,9 @@ const navSections = computed<NavSection[]>(() => {
                         <div class="pt-5 pb-2">
                             <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 flex items-center gap-3">
                                 <img
-                                    v-if="$page.props.branding?.systemLogo"
+                                    v-if="$page.props.branding?.systemLogo && !logoError"
                                     :src="$page.props.branding.systemLogo"
+                                    @error="logoError = true"
                                     alt="Logo"
                                     class="w-10 h-10 rounded-xl object-contain bg-white dark:bg-slate-900 p-1 border border-slate-200/60 dark:border-slate-800 shadow-xs shrink-0"
                                 />
@@ -671,8 +674,9 @@ const navSections = computed<NavSection[]>(() => {
                             <div class="flex items-center gap-3">
                                 <div class="relative">
                                     <img
-                                        v-if="$page.props.auth.user.avatar_url"
+                                        v-if="$page.props.auth.user.avatar_url && !avatarError"
                                         :src="$page.props.auth.user.avatar_url"
+                                        @error="avatarError = true"
                                         alt="Avatar"
                                         class="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shadow-xs"
                                     />
@@ -729,8 +733,9 @@ const navSections = computed<NavSection[]>(() => {
                         <!-- Stationary App Icon (w-11 in 60px slot = centered at 40px) -->
                         <div class="w-11 h-11 flex items-center justify-center shrink-0">
                             <img
-                                v-if="$page.props.branding?.systemLogo"
+                                v-if="$page.props.branding?.systemLogo && !logoError"
                                 :src="$page.props.branding.systemLogo"
+                                @error="logoError = true"
                                 alt="Logo"
                                 class="w-9 h-9 rounded-xl object-contain bg-white dark:bg-slate-900 p-0.5 border border-slate-200/60 dark:border-slate-800 shadow-xs shrink-0"
                             />
@@ -891,8 +896,9 @@ const navSections = computed<NavSection[]>(() => {
                             <div class="w-11 h-11 flex items-center justify-center shrink-0">
                                 <div class="relative">
                                     <img
-                                        v-if="$page.props.auth.user.avatar_url"
+                                        v-if="$page.props.auth.user.avatar_url && !avatarError"
                                         :src="$page.props.auth.user.avatar_url"
+                                        @error="avatarError = true"
                                         alt="Avatar"
                                         class="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shadow-xs"
                                     />
@@ -972,8 +978,9 @@ const navSections = computed<NavSection[]>(() => {
 
                     <div class="flex items-center gap-2">
                         <img
-                            v-if="$page.props.branding?.systemLogo"
+                            v-if="$page.props.branding?.systemLogo && !logoError"
                             :src="$page.props.branding.systemLogo"
+                            @error="logoError = true"
                             alt="Logo"
                             class="w-7 h-7 rounded-lg object-contain bg-white dark:bg-slate-900 p-0.5 border border-slate-200/60 dark:border-slate-800 shadow-xs"
                         />

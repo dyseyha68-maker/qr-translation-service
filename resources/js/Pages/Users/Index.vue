@@ -27,6 +27,7 @@ const props = defineProps<{
 
 const confirmingDeletion = ref(false);
 const userToDelete = ref<UserItem | null>(null);
+const failedAvatars = ref(new Set<number>());
 
 function confirmDelete(user: UserItem) {
     userToDelete.value = user;
@@ -97,8 +98,9 @@ function deleteUser() {
                                         <div class="flex items-center gap-3">
                                             <div class="h-9 w-9 rounded-xl overflow-hidden shrink-0">
                                                 <img
-                                                    v-if="user.avatar_url"
+                                                    v-if="user.avatar_url && !failedAvatars.has(user.id)"
                                                     :src="user.avatar_url"
+                                                    @error="failedAvatars.add(user.id)"
                                                     alt="Avatar"
                                                     class="h-full w-full object-cover"
                                                 />

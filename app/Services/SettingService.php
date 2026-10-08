@@ -45,7 +45,7 @@ class SettingService
         $systemLogoUrl = null;
 
         if ($logoPath && Storage::disk('public')->exists($logoPath)) {
-            $systemLogoUrl = Storage::disk('public')->url($logoPath);
+            $systemLogoUrl = '/storage/'.ltrim($logoPath, '/');
         }
 
         return [
@@ -68,7 +68,7 @@ class SettingService
         $path = $file->store('branding', 'public');
         $this->set('system_logo', $path);
 
-        return Storage::disk('public')->url($path);
+        return '/storage/'.ltrim($path, '/');
     }
 
     /**

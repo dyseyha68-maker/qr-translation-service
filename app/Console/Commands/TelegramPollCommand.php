@@ -70,7 +70,9 @@ class TelegramPollCommand extends Command
 
                     try {
                         $result = $attributionService->processWebhookUpdate($update);
-                        $this->info("   ↳ Handled: {$result['event_type']} (Lead: " . ($result['lead_id'] ?? 'none') . ")");
+                        $outcome = $result['outcome'] ?? $result['status'] ?? $result['event_type'] ?? 'processed';
+                        $leadId = isset($result['lead']) ? (string) $result['lead']->id : (string) ($result['lead_id'] ?? 'none');
+                        $this->info("   ↳ Handled: {$outcome} (Lead: {$leadId})");
                     } catch (Throwable $e) {
                         $this->error("   ↳ Processing exception: {$e->getMessage()}");
                     }
