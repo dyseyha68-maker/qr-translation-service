@@ -6,6 +6,25 @@ import axios from 'axios';
 const page = usePage();
 const showingMobileSidebar = ref(false);
 const isHovered = ref(false);
+let hoverLeaveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const onSidebarMouseEnter = () => {
+    if (hoverLeaveTimeout) {
+        clearTimeout(hoverLeaveTimeout);
+        hoverLeaveTimeout = null;
+    }
+    isHovered.value = true;
+};
+
+const onSidebarMouseLeave = () => {
+    if (hoverLeaveTimeout) {
+        clearTimeout(hoverLeaveTimeout);
+    }
+    hoverLeaveTimeout = setTimeout(() => {
+        isHovered.value = false;
+        hoverLeaveTimeout = null;
+    }, 150);
+};
 
 // QR Scan In-App Notifications State
 export interface ScanNotification {
@@ -130,6 +149,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    if (hoverLeaveTimeout) {
+        clearTimeout(hoverLeaveTimeout);
+        hoverLeaveTimeout = null;
+    }
     document.removeEventListener('visibilitychange', handleVisibilityChange);
     if (scanPollTimer) {
         clearInterval(scanPollTimer);
@@ -516,7 +539,7 @@ const navSections = computed<NavSection[]>(() => {
                             class="-m-2.5 p-2.5 text-white/90 hover:text-white transition"
                         >
                             <span class="sr-only">Close sidebar</span>
-                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
@@ -654,85 +677,93 @@ const navSections = computed<NavSection[]>(() => {
         </div>
 
         <!-- ========================================================================= -->
-        <!-- DESKTOP FIXED LEFT SIDEBAR (Auto Collapse/Expand on Hover)                -->
+        <!-- ========================================================================= -->
+        <!-- DESKTOP FIXED LEFT SIDEBAR (Buttery-Smooth Auto Collapse/Expand on Hover) -->
         <!-- ========================================================================= -->
         <aside
-            @mouseenter="isHovered = true"
-            @mouseleave="isHovered = false"
+            @mouseenter="onSidebarMouseEnter"
+            @mouseleave="onSidebarMouseLeave"
             :class="[
                 isHovered ? 'w-72 shadow-2xl' : 'w-20 shadow-xs',
-                'hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:flex-col transition-all duration-300 ease-in-out border-r border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0E131F]'
+                'hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:flex-col transition-[width,box-shadow] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-[width] border-r border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0E131F] overflow-x-hidden select-none'
             ]"
         >
-            <div class="flex grow flex-col overflow-y-auto px-4 pb-4">
-                <!-- TOP WORKSPACE SELECTOR -->
-                <div class="pt-4 pb-3">
-                    <!-- Expanded Workspace Pill (on hover) -->
-                    <div
-                        v-if="isHovered"
-                        class="p-2 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 transition-all duration-150 flex items-center justify-between group cursor-default shadow-2xs"
+            <div class="flex grow flex-col overflow-y-auto overflow-x-hidden px-2.5 pb-4">
+                <!-- TOP WORKSPACE SELECTOR (Stationary icon at x=40px, smooth label fade) -->
+                <div class="pt-4 pb-2">
+                    <Link
+                        :href="route('dashboard')"
+                        class="flex items-center h-12 px-2 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors duration-150 w-full overflow-hidden shadow-2xs group"
+                        title="DIN & CO Translation"
                     >
-                        <div class="flex items-center gap-2.5 min-w-0">
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0">
+                        <!-- Stationary App Icon (w-11 in 60px slot = centered at 40px) -->
+                        <div class="w-11 h-11 flex items-center justify-center shrink-0">
+                            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0 group-hover:scale-102 transition-transform">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                 </svg>
                             </div>
-                            <div class="min-w-0 flex items-center gap-1.5">
-                                <span class="font-bold text-sm text-slate-900 dark:text-white truncate">DIN & CO</span>
-                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
-                                    PRO
-                                </span>
-                            </div>
                         </div>
-                    </div>
 
-                    <!-- Collapsed Workspace Icon (default) -->
-                    <div v-else class="flex justify-center">
-                        <Link
-                            :href="route('dashboard')"
-                            class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 hover:scale-105 transition-transform"
-                            title="DIN & CO Translation"
+                        <!-- Brand Label: Smooth Fade & Slide -->
+                        <div
+                            class="flex items-center gap-1.5 min-w-0 ml-1.5 transition-all duration-200 ease-out whitespace-nowrap overflow-hidden"
+                            :class="[
+                                isHovered
+                                    ? 'opacity-100 translate-x-0'
+                                    : 'opacity-0 -translate-x-2 pointer-events-none'
+                            ]"
                         >
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                            </svg>
-                        </Link>
-                    </div>
+                            <span class="font-bold text-sm text-slate-900 dark:text-white truncate">DIN & CO</span>
+                            <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
+                                PRO
+                            </span>
+                        </div>
+                    </Link>
                 </div>
 
                 <!-- NAVIGATION SECTIONS -->
-                <nav class="flex-1 space-y-4">
+                <nav class="flex-1 space-y-3">
                     <div v-for="section in navSections" :key="section.title" class="space-y-1">
-                        <div
-                            v-if="isHovered"
-                            class="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-3 py-1"
-                        >
-                            {{ section.title }}
+                        <!-- Section Header: Strictly constant height h-6 (zero vertical jump) -->
+                        <div class="h-6 flex items-center px-2 relative my-1">
+                            <!-- Collapsed: subtle divider bar centered in the rail -->
+                            <div
+                                class="absolute inset-0 flex items-center justify-center transition-opacity duration-200"
+                                :class="isHovered ? 'opacity-0 pointer-events-none' : 'opacity-100'"
+                            >
+                                <span class="w-5 h-px bg-slate-200/80 dark:bg-slate-800"></span>
+                            </div>
+
+                            <!-- Expanded: Section Title text -->
+                            <div
+                                class="transition-all duration-200 ease-out whitespace-nowrap overflow-hidden text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider"
+                                :class="isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'"
+                            >
+                                {{ section.title }}
+                            </div>
                         </div>
 
+                        <!-- Nav Items -->
                         <ul role="list" class="space-y-1">
                             <li v-for="item in section.items" :key="item.route">
                                 <Link
                                     :href="route(item.route)"
-                                    :title="!isHovered ? item.label : undefined"
                                     :class="[
                                         route().current(item.activePattern)
                                             ? 'bg-slate-900 text-white dark:bg-indigo-600 dark:text-white shadow-xs font-semibold'
                                             : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/90 dark:hover:bg-slate-850/80 hover:text-slate-900 dark:hover:text-white font-medium',
-                                        !isHovered
-                                            ? 'justify-center px-0 h-11 w-11 mx-auto'
-                                            : 'justify-between px-3.5 py-2.5 w-full',
-                                        'group flex items-center rounded-2xl text-[13px] transition-all duration-150'
+                                        'group flex items-center rounded-2xl text-[13px] h-11 px-2 w-full transition-colors duration-150 relative overflow-hidden'
                                     ]"
                                 >
-                                    <div class="flex items-center gap-3 min-w-0">
+                                    <!-- Stationary Icon Container (Centered horizontally at 40px) -->
+                                    <div class="w-11 h-11 flex items-center justify-center shrink-0">
                                         <span
                                             :class="[
                                                 route().current(item.activePattern)
                                                     ? 'text-white'
                                                     : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-800 dark:group-hover:text-slate-200',
-                                                'shrink-0 transition-colors'
+                                                'transition-colors shrink-0'
                                             ]"
                                         >
                                             <!-- Dashboard -->
@@ -776,43 +807,62 @@ const navSections = computed<NavSection[]>(() => {
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                             </svg>
                                         </span>
-
-                                        <span v-if="isHovered" class="truncate">{{ item.label }}</span>
                                     </div>
 
-                                    <span
-                                        v-if="isHovered && item.badge"
+                                    <!-- Label & Badge: Smooth Fade & Slide (flex-1 with zero max-w animation) -->
+                                    <div
+                                        class="flex items-center justify-between flex-1 min-w-0 pr-1 transition-all duration-200 ease-out whitespace-nowrap overflow-hidden"
                                         :class="[
-                                            route().current(item.activePattern)
-                                                ? 'bg-white/20 text-white'
-                                                : item.badgeColor || 'bg-slate-100 text-slate-600',
-                                            'px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 transition-colors'
+                                            isHovered
+                                                ? 'opacity-100 translate-x-0'
+                                                : 'opacity-0 -translate-x-2 pointer-events-none'
                                         ]"
                                     >
-                                        {{ item.badge }}
-                                    </span>
+                                        <span class="truncate font-semibold text-[13px]">{{ item.label }}</span>
+                                        <span
+                                            v-if="item.badge"
+                                            :class="[
+                                                route().current(item.activePattern)
+                                                    ? 'bg-white/20 text-white'
+                                                    : item.badgeColor || 'bg-slate-100 text-slate-600',
+                                                'px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ml-2'
+                                            ]"
+                                        >
+                                            {{ item.badge }}
+                                        </span>
+                                    </div>
                                 </Link>
                             </li>
                         </ul>
                     </div>
                 </nav>
 
-                <!-- BOTTOM USER PROFILE -->
-                <div class="mt-auto pt-4 border-t border-slate-200/60 dark:border-slate-800/80">
-                    <!-- USER PROFILE CARD (Expanded on hover) -->
-                    <div
-                        v-if="isHovered"
-                        class="p-2.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 hover:bg-slate-100/90 dark:hover:bg-slate-850/90 transition-all duration-150 flex items-center justify-between gap-2.5 shadow-2xs"
-                    >
-                        <Link :href="route('profile.edit')" class="flex items-center gap-2.5 min-w-0 flex-1 group">
-                            <div class="relative shrink-0">
-                                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:ring-2 group-hover:ring-indigo-400 transition">
-                                    {{ getUserInitials($page.props.auth.user.name) }}
+                <!-- BOTTOM USER PROFILE (Stationary avatar at x=40px, smooth user info fade) -->
+                <div class="mt-auto pt-3 border-t border-slate-200/60 dark:border-slate-800/80">
+                    <div class="p-1.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 flex items-center justify-between transition-colors duration-150 w-full overflow-hidden shadow-2xs">
+                        <Link
+                            :href="route('profile.edit')"
+                            class="flex items-center min-w-0 flex-1 group"
+                        >
+                            <!-- Stationary Avatar Container (Centered at 40px) -->
+                            <div class="w-11 h-11 flex items-center justify-center shrink-0">
+                                <div class="relative">
+                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:ring-2 group-hover:ring-indigo-400 transition">
+                                        {{ getUserInitials($page.props.auth.user.name) }}
+                                    </div>
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 absolute -bottom-0.5 -right-0.5"></span>
                                 </div>
-                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 absolute -bottom-0.5 -right-0.5"></span>
                             </div>
 
-                            <div class="min-w-0">
+                            <!-- User Info: Smooth Fade & Slide -->
+                            <div
+                                class="min-w-0 ml-1.5 transition-all duration-200 ease-out whitespace-nowrap overflow-hidden"
+                                :class="[
+                                    isHovered
+                                        ? 'opacity-100 translate-x-0'
+                                        : 'opacity-0 -translate-x-2 pointer-events-none'
+                                ]"
+                            >
                                 <div class="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                                     {{ $page.props.auth.user.name }}
                                 </div>
@@ -824,31 +874,27 @@ const navSections = computed<NavSection[]>(() => {
                             </div>
                         </Link>
 
-                        <Link
-                            :href="route('logout')"
-                            method="post"
-                            as="button"
-                            class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0"
-                            title="Sign out"
+                        <!-- Logout Button: Smooth Fade & Slide -->
+                        <div
+                            class="transition-all duration-200 ease-out shrink-0 overflow-hidden"
+                            :class="[
+                                isHovered
+                                    ? 'opacity-100 translate-x-0 ml-1'
+                                    : 'opacity-0 translate-x-2 pointer-events-none'
+                            ]"
                         >
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
-                            </svg>
-                        </Link>
-                    </div>
-
-                    <!-- USER PROFILE (Collapsed by default) -->
-                    <div v-else class="flex justify-center">
-                        <Link
-                            :href="route('profile.edit')"
-                            class="relative group"
-                            :title="`${$page.props.auth.user.name} (${$page.props.auth.user.role})`"
-                        >
-                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition">
-                                {{ getUserInitials($page.props.auth.user.name) }}
-                            </div>
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 absolute -bottom-0.5 -right-0.5"></span>
-                        </Link>
+                            <Link
+                                :href="route('logout')"
+                                method="post"
+                                as="button"
+                                class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 block"
+                                title="Sign out"
+                            >
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                </svg>
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>
