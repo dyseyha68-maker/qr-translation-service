@@ -532,12 +532,11 @@ const navSections = computed<NavSection[]>(() => {
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                     </svg>
                                 </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="text-sm font-bold text-slate-900 dark:text-white truncate">DIN & CO Translation</div>
-                                    <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                        <span>Phnom Penh HQ</span>
-                                    </div>
+                                <div class="min-w-0 flex-1 flex items-center gap-1.5">
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white truncate">DIN & CO</span>
+                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
+                                        PRO
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -679,17 +678,11 @@ const navSections = computed<NavSection[]>(() => {
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                 </svg>
                             </div>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="font-bold text-sm text-slate-900 dark:text-white truncate">DIN & CO</span>
-                                    <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
-                                        PRO
-                                    </span>
-                                </div>
-                                <div class="text-[11px] text-slate-400 font-medium truncate flex items-center gap-1">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                    <span class="truncate">Referral HQ • Live</span>
-                                </div>
+                            <div class="min-w-0 flex items-center gap-1.5">
+                                <span class="font-bold text-sm text-slate-900 dark:text-white truncate">DIN & CO</span>
+                                <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
+                                    PRO
+                                </span>
                             </div>
                         </div>
                     </div>
