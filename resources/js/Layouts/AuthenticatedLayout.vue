@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import axios from 'axios';
+import ThemeToggle from '@/Components/ThemeToggle.vue';
 
 const page = usePage();
 const showingMobileSidebar = ref(false);
@@ -305,6 +306,13 @@ const navSections = computed<NavSection[]>(() => {
                     permission: authCan.viewUsers,
                     icon: 'users',
                 },
+                {
+                    label: 'Branding & Settings',
+                    route: 'settings.index',
+                    activePattern: 'settings.*',
+                    permission: authCan.manageSettings,
+                    icon: 'settings',
+                },
             ],
         },
     ];
@@ -550,13 +558,21 @@ const navSections = computed<NavSection[]>(() => {
                         <!-- Mobile Workspace Header -->
                         <div class="pt-5 pb-2">
                             <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/60 dark:border-slate-800 flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0">
+                                <img
+                                    v-if="$page.props.branding?.systemLogo"
+                                    :src="$page.props.branding.systemLogo"
+                                    alt="Logo"
+                                    class="w-10 h-10 rounded-xl object-contain bg-white dark:bg-slate-900 p-1 border border-slate-200/60 dark:border-slate-800 shadow-xs shrink-0"
+                                />
+                                <div v-else class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0">
                                     <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                     </svg>
                                 </div>
                                 <div class="min-w-0 flex-1 flex items-center gap-1.5">
-                                    <span class="text-sm font-bold text-slate-900 dark:text-white truncate">DIN & CO</span>
+                                    <span class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                                        {{ $page.props.branding?.brandName || 'DIN & CO' }}
+                                    </span>
                                     <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
                                         PRO
                                     </span>
@@ -629,8 +645,13 @@ const navSections = computed<NavSection[]>(() => {
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                                         </svg>
                                                         <!-- Users -->
-                                                        <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                        <svg v-else-if="item.icon === 'users'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                        </svg>
+                                                        <!-- Settings -->
+                                                        <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                         </svg>
                                                     </span>
                                                     <span>{{ item.label }}</span>
@@ -649,7 +670,16 @@ const navSections = computed<NavSection[]>(() => {
                         <div class="mt-auto border-t border-slate-200/80 dark:border-slate-800 pt-4 flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <div class="relative">
-                                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                                    <img
+                                        v-if="$page.props.auth.user.avatar_url"
+                                        :src="$page.props.auth.user.avatar_url"
+                                        alt="Avatar"
+                                        class="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shadow-xs"
+                                    />
+                                    <div
+                                        v-else
+                                        class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs"
+                                    >
                                         {{ getUserInitials($page.props.auth.user.name) }}
                                     </div>
                                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 absolute -bottom-0.5 -right-0.5"></span>
@@ -694,11 +724,17 @@ const navSections = computed<NavSection[]>(() => {
                     <Link
                         :href="route('dashboard')"
                         class="flex items-center h-12 px-2 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors duration-150 w-full overflow-hidden shadow-2xs group"
-                        title="DIN & CO Translation"
+                        :title="$page.props.branding?.brandName || 'DIN & CO Translation'"
                     >
                         <!-- Stationary App Icon (w-11 in 60px slot = centered at 40px) -->
                         <div class="w-11 h-11 flex items-center justify-center shrink-0">
-                            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0 group-hover:scale-102 transition-transform">
+                            <img
+                                v-if="$page.props.branding?.systemLogo"
+                                :src="$page.props.branding.systemLogo"
+                                alt="Logo"
+                                class="w-9 h-9 rounded-xl object-contain bg-white dark:bg-slate-900 p-0.5 border border-slate-200/60 dark:border-slate-800 shadow-xs shrink-0"
+                            />
+                            <div v-else class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-sky-500 text-white flex items-center justify-center font-black shadow-md shadow-indigo-500/25 shrink-0 group-hover:scale-102 transition-transform">
                                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                                 </svg>
@@ -714,7 +750,9 @@ const navSections = computed<NavSection[]>(() => {
                                     : 'opacity-0 -translate-x-2 pointer-events-none'
                             ]"
                         >
-                            <span class="font-bold text-sm text-slate-900 dark:text-white truncate">DIN & CO</span>
+                            <span class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                {{ $page.props.branding?.brandName || 'DIN & CO' }}
+                            </span>
                             <span class="inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/60">
                                 PRO
                             </span>
@@ -803,8 +841,13 @@ const navSections = computed<NavSection[]>(() => {
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                             </svg>
                                             <!-- Users -->
-                                            <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <svg v-else-if="item.icon === 'users'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                            <!-- Settings -->
+                                            <svg v-else class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
                                         </span>
                                     </div>
@@ -847,7 +890,16 @@ const navSections = computed<NavSection[]>(() => {
                             <!-- Stationary Avatar Container (Centered at 40px) -->
                             <div class="w-11 h-11 flex items-center justify-center shrink-0">
                                 <div class="relative">
-                                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:ring-2 group-hover:ring-indigo-400 transition">
+                                    <img
+                                        v-if="$page.props.auth.user.avatar_url"
+                                        :src="$page.props.auth.user.avatar_url"
+                                        alt="Avatar"
+                                        class="w-9 h-9 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 shadow-xs"
+                                    />
+                                    <div
+                                        v-else
+                                        class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:ring-2 group-hover:ring-indigo-400 transition"
+                                    >
                                         {{ getUserInitials($page.props.auth.user.name) }}
                                     </div>
                                     <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900 absolute -bottom-0.5 -right-0.5"></span>
@@ -919,18 +971,27 @@ const navSections = computed<NavSection[]>(() => {
                     </button>
 
                     <div class="flex items-center gap-2">
-                        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                        <img
+                            v-if="$page.props.branding?.systemLogo"
+                            :src="$page.props.branding.systemLogo"
+                            alt="Logo"
+                            class="w-7 h-7 rounded-lg object-contain bg-white dark:bg-slate-900 p-0.5 border border-slate-200/60 dark:border-slate-800 shadow-xs"
+                        />
+                        <div v-else class="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-600 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                             </svg>
                         </div>
                         <span class="font-bold tracking-tight text-slate-900 dark:text-white">
-                            DIN & CO
+                            {{ $page.props.branding?.brandName || 'DIN & CO' }}
                         </span>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2">
+                    <!-- Dark Mode Toggle -->
+                    <ThemeToggle />
+
                     <!-- Notification Bell (Mobile) -->
                     <button
                         type="button"
@@ -953,7 +1014,7 @@ const navSections = computed<NavSection[]>(() => {
                 </div>
             </div>
 
-            <!-- Page Heading Slot with Scan Bell Trigger -->
+            <!-- Page Heading Slot with Scan Bell Trigger & Theme Toggle -->
             <header
                 v-if="$slots.header"
                 class="bg-white/70 dark:bg-[#0E131F]/70 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/80 sticky top-0 z-30 hidden lg:block"
@@ -963,8 +1024,10 @@ const navSections = computed<NavSection[]>(() => {
                         <slot name="header" />
                     </div>
 
-                    <!-- Top Header QR Scan Notification Bell -->
+                    <!-- Top Header Actions: Theme Toggle & QR Scan Bell -->
                     <div class="flex items-center gap-3 shrink-0 ml-4">
+                        <ThemeToggle />
+
                         <button
                             type="button"
                             @click="showingScanDrawer = true"

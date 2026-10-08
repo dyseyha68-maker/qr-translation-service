@@ -105,6 +105,9 @@ class RoleAndPermissionSeeder extends Seeder
             // Phase 7 permissions
             PermissionName::REPORTS_VIEW->value,
             PermissionName::REPORTS_EXPORT->value,
+            // Settings permissions
+            PermissionName::SETTINGS_VIEW->value,
+            PermissionName::SETTINGS_MANAGE->value,
         ]);
 
         // 4. Staff: Operational view & intake of leads, drivers, vehicles, codes, orders & recording payments

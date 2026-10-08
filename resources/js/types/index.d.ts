@@ -5,6 +5,9 @@ export interface User {
     email_verified_at?: string;
     status: 'ACTIVE' | 'INACTIVE';
     role: string;
+    avatar_path?: string | null;
+    avatar_url?: string | null;
+    permissions_count?: number;
     created_at?: string;
     can?: {
         edit: boolean;
@@ -359,7 +362,13 @@ export type PageProps<
             viewCommissionReports: boolean;
             viewReports: boolean;
             exportReports: boolean;
+            manageSettings?: boolean;
         };
+    };
+    branding?: {
+        brandName: string;
+        themeColor: string;
+        systemLogo: string | null;
     };
     flash: {
         success?: string | null;

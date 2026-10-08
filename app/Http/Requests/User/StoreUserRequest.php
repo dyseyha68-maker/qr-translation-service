@@ -34,6 +34,9 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', Password::defaults()],
             'role' => ['required', 'string', Rule::in(RoleName::values())],
             'status' => ['required', 'string', Rule::in(UserStatus::values())],
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', Rule::in(\App\Enums\PermissionName::values())],
+            'avatar' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
         ];
     }
 }

@@ -25,7 +25,20 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
+        'avatar_path',
     ];
+
+    /**
+     * Get the public URL to the user's avatar image.
+     */
+    public function getAvatarUrlAttribute(): ?string
+    {
+        if ($this->avatar_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($this->avatar_path)) {
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->avatar_path);
+        }
+
+        return null;
+    }
 
     /**
      * The attributes that should be hidden for serialization.

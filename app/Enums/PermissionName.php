@@ -85,6 +85,10 @@ enum PermissionName: string
     case REPORTS_VIEW = 'reports.view';
     case REPORTS_EXPORT = 'reports.export';
 
+    // System Settings & Branding
+    case SETTINGS_VIEW = 'settings.view';
+    case SETTINGS_MANAGE = 'settings.manage';
+
     /**
      * @return array<string>
      */

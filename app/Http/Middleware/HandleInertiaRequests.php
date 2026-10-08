@@ -46,6 +46,7 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'status' => $user->status->value,
                     'role' => $user->roles->first()?->name ?? 'STAFF',
+                    'avatar_url' => $user->avatar_url,
                 ] : null,
                 'can' => [
                     'viewUsers' => $user?->can('users.view') ?? false,
@@ -71,8 +72,10 @@ class HandleInertiaRequests extends Middleware
                     'viewCommissionReports' => $user?->can('commissions.reports') ?? false,
                     'viewReports' => $user?->can('reports.view') ?? false,
                     'exportReports' => $user?->can('reports.export') ?? false,
+                    'manageSettings' => ($user?->can('settings.manage') ?? false) || ($user?->isSuperAdmin() ?? false),
                 ],
             ],
+            'branding' => app(\App\Services\SettingService::class)->getBranding(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

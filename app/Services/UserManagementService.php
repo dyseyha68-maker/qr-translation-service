@@ -34,9 +34,14 @@ class UserManagementService
                 'email' => $data['email'],
                 'password' => Hash::make($data['password']),
                 'status' => UserStatus::from($data['status']),
+                'avatar_path' => $data['avatar_path'] ?? null,
             ]);
 
             $user->assignRole($data['role']);
+
+            if (isset($data['permissions']) && is_array($data['permissions'])) {
+                $user->syncPermissions($data['permissions']);
+            }
 
             return $user;
         });
@@ -45,7 +50,7 @@ class UserManagementService
     /**
      * Update an existing user's profile, status, and role.
      *
-     * @param  array{name: string, email: string, password?: ?string, role: string, status: string}  $data
+     * @param  array{name: string, email: string, password?: ?string, role: string, status: string, permissions?: array<string>, avatar_path?: ?string}  $data
      *
      * @throws AuthorizationException|ValidationException
      */
@@ -95,8 +100,16 @@ class UserManagementService
                 $updatePayload['password'] = Hash::make($data['password']);
             }
 
+            if (array_key_exists('avatar_path', $data)) {
+                $updatePayload['avatar_path'] = $data['avatar_path'];
+            }
+
             $targetUser->update($updatePayload);
             $targetUser->syncRoles([$data['role']]);
+
+            if (isset($data['permissions']) && is_array($data['permissions'])) {
+                $targetUser->syncPermissions($data['permissions']);
+            }
 
             return $targetUser;
         });

@@ -7,8 +7,10 @@ interface UserItem {
     id: number;
     name: string;
     email: string;
+    avatar_url?: string | null;
     status: 'ACTIVE' | 'INACTIVE';
     role: string;
+    permissions_count: number;
     created_at: string;
     can: {
         edit: boolean;
@@ -93,8 +95,19 @@ function deleteUser() {
                                 >
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center gap-3">
-                                            <div class="h-9 w-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-700 dark:text-slate-300 text-sm">
-                                                {{ user.name.charAt(0) }}
+                                            <div class="h-9 w-9 rounded-xl overflow-hidden shrink-0">
+                                                <img
+                                                    v-if="user.avatar_url"
+                                                    :src="user.avatar_url"
+                                                    alt="Avatar"
+                                                    class="h-full w-full object-cover"
+                                                />
+                                                <div
+                                                    v-else
+                                                    class="h-full w-full bg-gradient-to-tr from-indigo-600 to-blue-500 text-white flex items-center justify-center font-bold text-xs"
+                                                >
+                                                    {{ user.name.charAt(0).toUpperCase() }}
+                                                </div>
                                             </div>
                                             <div>
                                                 <div class="font-semibold text-slate-900 dark:text-white">
@@ -108,17 +121,22 @@ function deleteUser() {
                                     </td>
 
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span
-                                            :class="{
-                                                'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800': user.role === 'SUPER_ADMIN',
-                                                'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800': user.role === 'ADMIN',
-                                                'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800': user.role === 'FINANCE',
-                                                'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700': user.role === 'STAFF',
-                                            }"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
-                                        >
-                                            {{ user.role }}
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                :class="{
+                                                    'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300 border-purple-200 dark:border-purple-800': user.role === 'SUPER_ADMIN',
+                                                    'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200 dark:border-blue-800': user.role === 'ADMIN',
+                                                    'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200 dark:border-amber-800': user.role === 'FINANCE',
+                                                    'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700': user.role === 'STAFF',
+                                                }"
+                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border"
+                                            >
+                                                {{ user.role }}
+                                            </span>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700">
+                                                {{ user.permissions_count }} perms
+                                            </span>
+                                        </div>
                                     </td>
 
                                     <td class="px-6 py-4 whitespace-nowrap">

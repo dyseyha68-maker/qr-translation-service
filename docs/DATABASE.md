@@ -43,6 +43,7 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 | `email` | VARCHAR(255) | UNIQUE, NOT NULL | Staff login email |
 | `password` | VARCHAR(255) | NOT NULL | Hashed password |
 | `phone_number`| VARCHAR(50) | NULL | Contact phone number |
+| `avatar_path` | VARCHAR(255) | NULL | Stored profile picture relative path |
 | `is_active` | BOOLEAN | DEFAULT TRUE | Account active flag |
 | `remember_token` | VARCHAR(100) | NULL | Laravel auth token |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
@@ -338,3 +339,13 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 | `raw_payload` | JSON | NULL | Full JSON payload received from Telegram |
 | `ip_address` | VARCHAR(45) | NULL | IP address (if applicable) |
 | `created_at` | TIMESTAMP | NOT NULL | Immutable event timestamp |
+
+---
+
+### 3.11 `app_settings` (Application & Branding Configuration)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Primary Key |
+| `key` | VARCHAR(191) | UNIQUE, NOT NULL | Setting identifier (e.g., `brand_name`, `theme_color`, `system_logo`) |
+| `value` | TEXT | NULL | Setting configuration value |
+| `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |

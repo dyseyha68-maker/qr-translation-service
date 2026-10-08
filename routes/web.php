@@ -32,6 +32,7 @@ use App\Models\Commission;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Http\Controllers\ScanNotificationController;
+use App\Http\Controllers\SettingController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -82,6 +83,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile/avatar', [ProfileController::class, 'deleteAvatar'])->name('profile.avatar.destroy');
+
+    // System Branding, Theme Color & Logo Settings
+    Route::get('settings', [SettingController::class, 'index'])->name('settings.index');
+    Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::delete('settings/logo', [SettingController::class, 'deleteLogo'])->name('settings.logo.destroy');
 
     Route::resource('users', UserController::class)->except(['show']);
 
