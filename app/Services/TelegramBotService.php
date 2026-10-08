@@ -129,7 +129,6 @@ class TelegramBotService
         $message .= "We specialize in:\n";
         $message .= "• Certified Legal & Business Document Translation\n";
         $message .= "• Visa & Embassy Document Translation\n";
-        $message .= "• Driving License & Notarized Official Documents\n\n";
         $message .= "Our translation specialist has received your inquiry and will message you right here shortly to assist you with pricing and documents.";
 
         $supportUrl = 'https://t.me/'.$this->getSupportUsername();

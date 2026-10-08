@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferralCodeController;
@@ -43,41 +44,9 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    $orders = Order::with('payments')->get();
-    $totalPaid = (float) Payment::where('status', PaymentRecordStatus::PAID->value)->sum('amount');
-    $totalOutstanding = (float) $orders->whereIn('status', [OrderStatus::PENDING, OrderStatus::CONFIRMED])
-        ->sum(fn (Order $o) => $o->outstanding_amount);
-
-    return Inertia::render('Dashboard', [
-        'activePartnersCount' => ReferralPartner::active()->count(),
-        'activeDriversCount' => Driver::active()->count(),
-        'activeVehiclesCount' => Vehicle::active()->count(),
-        'activeReferralCodesCount' => ReferralCode::active()->count(),
-        'newLeadsCount' => Lead::where('status', LeadStatus::NEW)->count(),
-        'activeLeadsCount' => Lead::active()->count(),
-        'ordersSummary' => [
-            'newOrders' => $orders->where('status', OrderStatus::PENDING)->count(),
-            'confirmedOrders' => $orders->where('status', OrderStatus::CONFIRMED)->count(),
-            'completedOrders' => $orders->where('status', OrderStatus::COMPLETED)->count(),
-            'cancelledOrders' => $orders->where('status', OrderStatus::CANCELLED)->count(),
-            'unpaidOrders' => $orders->where('payment_status', PaymentStatus::UNPAID)->count(),
-            'partiallyPaidOrders' => $orders->where('payment_status', PaymentStatus::PARTIAL)->count(),
-            'fullyPaidOrders' => $orders->where('payment_status', PaymentStatus::PAID)->count(),
-            'totalPaidAmount' => round($totalPaid, 2),
-            'totalOutstandingAmount' => round($totalOutstanding, 2),
-        ],
-        'commissionsSummary' => [
-            'totalEarned' => round((float) Commission::whereIn('status', [CommissionStatus::EARNED, CommissionStatus::APPROVED, CommissionStatus::PAID])->sum('commission_amount'), 2),
-            'approvedAmount' => round((float) Commission::where('status', CommissionStatus::APPROVED)->sum('commission_amount'), 2),
-            'paidAmount' => round((float) Commission::where('status', CommissionStatus::PAID)->sum('commission_amount'), 2),
-            'outstandingAmount' => round((float) Commission::whereIn('status', [CommissionStatus::EARNED, CommissionStatus::APPROVED])->sum('commission_amount'), 2),
-            'earnedCount' => Commission::where('status', CommissionStatus::EARNED)->count(),
-            'approvedCount' => Commission::where('status', CommissionStatus::APPROVED)->count(),
-            'paidCount' => Commission::where('status', CommissionStatus::PAID)->count(),
-        ],
-    ]);
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
