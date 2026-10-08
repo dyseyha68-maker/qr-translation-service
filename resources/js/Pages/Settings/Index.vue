@@ -12,6 +12,10 @@ interface BrandingProp {
     brandName: string;
     themeColor: string;
     systemLogo: string | null;
+    telegramSupportUsername?: string;
+    supportEmail?: string;
+    supportPhone?: string;
+    address?: string;
 }
 
 interface ColorPalette {
@@ -37,10 +41,18 @@ const previewLoadFailed = ref(false);
 const form = useForm<{
     brand_name: string;
     theme_color: string;
+    telegram_support_username: string;
+    support_phone: string;
+    support_email: string;
+    address: string;
     logo: File | null;
 }>({
     brand_name: props.branding.brandName,
     theme_color: props.branding.themeColor,
+    telegram_support_username: props.branding.telegramSupportUsername || 'seyhady',
+    support_phone: props.branding.supportPhone || '',
+    support_email: props.branding.supportEmail || '',
+    address: props.branding.address || '',
     logo: null,
 });
 
@@ -283,6 +295,85 @@ const submitSettings = () => {
                                 Displayed in the sidebar workspace header and browser title.
                             </p>
                             <InputError class="mt-2" :message="form.errors.brand_name" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUPPORT & CONTACT CHANNELS -->
+                <div class="bg-white dark:bg-[#0E131F] rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 md:p-8 shadow-xs space-y-6">
+                    <div class="border-b border-slate-100 dark:border-slate-800/80 pb-5">
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                            Customer Support & Telegram Contact
+                        </h3>
+                        <p class="text-xs text-slate-400 mt-0.5">
+                            Configure the destination when customers click "Contact Support" on the Telegram Bot or in the greeting message.
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Telegram Support Username -->
+                        <div>
+                            <InputLabel for="telegram_support_username" value="Support Telegram Username" />
+                            <div class="relative mt-1.5">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-sm font-semibold">@</span>
+                                <TextInput
+                                    id="telegram_support_username"
+                                    type="text"
+                                    v-model="form.telegram_support_username"
+                                    class="pl-8 block w-full"
+                                    placeholder="e.g. seyhady"
+                                    :disabled="!canManage"
+                                />
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Used for the "💬 Contact Support" inline button on Telegram (opens t.me/username).
+                            </p>
+                            <InputError class="mt-2" :message="form.errors.telegram_support_username" />
+                        </div>
+
+                        <!-- Hotline Phone -->
+                        <div>
+                            <InputLabel for="support_phone" value="Customer Hotline / Phone" />
+                            <TextInput
+                                id="support_phone"
+                                type="text"
+                                v-model="form.support_phone"
+                                class="mt-1.5 block w-full"
+                                placeholder="e.g. +855 23 888 999"
+                                :disabled="!canManage"
+                            />
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Displayed in bot welcome messages and contact info cards.
+                            </p>
+                            <InputError class="mt-2" :message="form.errors.support_phone" />
+                        </div>
+
+                        <!-- Support Email -->
+                        <div>
+                            <InputLabel for="support_email" value="Support Email Address" />
+                            <TextInput
+                                id="support_email"
+                                type="email"
+                                v-model="form.support_email"
+                                class="mt-1.5 block w-full"
+                                placeholder="e.g. support@dinandco.com"
+                                :disabled="!canManage"
+                            />
+                            <InputError class="mt-2" :message="form.errors.support_email" />
+                        </div>
+
+                        <!-- Physical Office Address -->
+                        <div>
+                            <InputLabel for="address" value="Office Location / Address" />
+                            <TextInput
+                                id="address"
+                                type="text"
+                                v-model="form.address"
+                                class="mt-1.5 block w-full"
+                                placeholder="e.g. Phnom Penh, Cambodia"
+                                :disabled="!canManage"
+                            />
+                            <InputError class="mt-2" :message="form.errors.address" />
                         </div>
                     </div>
                 </div>

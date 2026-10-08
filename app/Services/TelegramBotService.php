@@ -132,10 +132,11 @@ class TelegramBotService
         $message .= "• Driving License & Notarized Official Documents\n\n";
         $message .= "Our translation specialist has received your inquiry and will message you right here shortly to assist you with pricing and documents.";
 
+        $supportUrl = 'https://t.me/'.$this->getSupportUsername();
         $keyboard = [
             'inline_keyboard' => [
                 [
-                    ['text' => '💬 Contact Support', 'url' => "https://t.me/{$this->supportUsername}"],
+                    ['text' => '💬 Contact Support', 'url' => $supportUrl],
                 ],
             ],
         ];
@@ -152,10 +153,11 @@ class TelegramBotService
         $message .= "Sorry, this referral link is not recognized or is no longer valid.\n";
         $message .= "Our staff will be delighted to assist you directly.";
 
+        $supportUrl = 'https://t.me/'.$this->getSupportUsername();
         $keyboard = [
             'inline_keyboard' => [
                 [
-                    ['text' => '💬 Chat With Staff', 'url' => "https://t.me/{$this->supportUsername}"],
+                    ['text' => '💬 Chat With Staff', 'url' => $supportUrl],
                 ],
             ],
         ];
@@ -172,10 +174,11 @@ class TelegramBotService
         $message .= "This referral promotion code is currently inactive.\n";
         $message .= "Please feel free to connect with our staff directly for any translation assistance.";
 
+        $supportUrl = 'https://t.me/'.$this->getSupportUsername();
         $keyboard = [
             'inline_keyboard' => [
                 [
-                    ['text' => '💬 Chat With Staff', 'url' => "https://t.me/{$this->supportUsername}"],
+                    ['text' => '💬 Chat With Staff', 'url' => $supportUrl],
                 ],
             ],
         ];
@@ -188,19 +191,85 @@ class TelegramBotService
      */
     public function sendDirectWelcomeMessage(int|string $chatId): bool
     {
-        $companyName = config('app.name', 'Translation & Legalization Services');
+        $companyName = (string) \App\Models\AppSetting::getValue('brand_name', config('app.name', 'DIN & CO Translation'));
 
         $message = "👋 <b>Welcome to {$companyName}!</b>\n\n";
         $message .= "How can we help you with your translation or notarization needs today?\n";
         $message .= "Please send us your inquiry or contact our support team below.";
 
+        $supportUrl = 'https://t.me/'.$this->getSupportUsername();
         $keyboard = [
             'inline_keyboard' => [
                 [
-                    ['text' => '💬 Chat With Staff', 'url' => "https://t.me/{$this->supportUsername}"],
+                    ['text' => '💬 Chat With Staff', 'url' => $supportUrl],
                 ],
             ],
         ];
+
+        return $this->sendMessage($chatId, $message, $keyboard);
+    }
+
+    /**
+     * Send direct support contact message with interactive buttons.
+     */
+    public function sendSupportContactMessage(int|string $chatId): bool
+    {
+        $companyName = (string) \App\Models\AppSetting::getValue('brand_name', config('app.name', 'DIN & CO Translation'));
+        $supportPhone = \App\Models\AppSetting::getValue('support_phone');
+        $supportEmail = \App\Models\AppSetting::getValue('support_email');
+        $supportHandle = $this->getSupportUsername();
+
+        $message = "📞 <b>Contact {$companyName} Support</b>\n";
+        $message .= "សូមទាក់ទងមកកាន់ផ្នែកបម្រើអតិថិជន!\n\n";
+        $message .= "Our translation specialists are ready to assist you right now.\n\n";
+
+        if ($supportHandle) {
+            $message .= "💬 <b>Telegram:</b> @{$supportHandle}\n";
+        }
+        if ($supportPhone) {
+            $message .= "📱 <b>Phone / Hotline:</b> {$supportPhone}\n";
+        }
+        if ($supportEmail) {
+            $message .= "✉️ <b>Email:</b> {$supportEmail}\n";
+        }
+
+        $message .= "\nYou can also send your documents and photos directly into this chat, and our staff will message you shortly.";
+
+        $buttons = [];
+        if ($supportHandle) {
+            $buttons[] = ['text' => '💬 Chat With Specialist', 'url' => "https://t.me/{$supportHandle}"];
+        }
+        if ($supportPhone) {
+            $cleanPhone = preg_replace('/[^\d+]/', '', (string) $supportPhone);
+            if ($cleanPhone) {
+                $buttons[] = ['text' => '📞 Call Hotline', 'url' => "tel:{$cleanPhone}"];
+            }
+        }
+
+        $keyboard = ! empty($buttons) ? ['inline_keyboard' => [$buttons]] : null;
+
+        return $this->sendMessage($chatId, $message, $keyboard);
+    }
+
+    /**
+     * Send acknowledgment when customer sends an inquiry or general message in chat.
+     */
+    public function sendCustomerInquiryAcknowledgment(int|string $chatId, string $customerMessage): bool
+    {
+        $companyName = (string) \App\Models\AppSetting::getValue('brand_name', config('app.name', 'DIN & CO Translation'));
+        $supportHandle = $this->getSupportUsername();
+
+        $message = "✅ <b>Thank you for your message!</b>\n";
+        $message .= "សាររបស់អ្នកត្រូវបានបញ្ជូនទៅកាន់ក្រុមការងាររួចរាល់ហើយ!\n\n";
+        $message .= "Our translation specialist has received your inquiry and will message you back right here shortly.\n\n";
+        $message .= "If urgent, you can also reach out to our support team directly:";
+
+        $buttons = [];
+        if ($supportHandle) {
+            $buttons[] = ['text' => '💬 Chat With Specialist', 'url' => "https://t.me/{$supportHandle}"];
+        }
+
+        $keyboard = ! empty($buttons) ? ['inline_keyboard' => [$buttons]] : null;
 
         return $this->sendMessage($chatId, $message, $keyboard);
     }
@@ -288,7 +357,7 @@ class TelegramBotService
         }
 
         try {
-            $response = $this->httpClient($timeout + 5)
+            $response = $this->httpClient($timeout + 15)
                 ->get("https://api.telegram.org/bot{$this->botToken}/getUpdates", [
                     'offset' => $offset,
                     'limit' => $limit,
@@ -308,6 +377,16 @@ class TelegramBotService
 
     public function getSupportUsername(): string
     {
+        $setting = \App\Models\AppSetting::getValue('telegram_support_username');
+        if (! empty($setting)) {
+            return ltrim((string) $setting, '@');
+        }
+
+        $config = config('services.telegram.support_username');
+        if (! empty($config)) {
+            return ltrim((string) $config, '@');
+        }
+
         return $this->supportUsername;
     }
 }

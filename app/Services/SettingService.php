@@ -52,6 +52,10 @@ class SettingService
             'brandName' => (string) $this->get('brand_name', self::DEFAULT_BRAND_NAME),
             'themeColor' => (string) $this->get('theme_color', self::DEFAULT_THEME_COLOR),
             'systemLogo' => $systemLogoUrl,
+            'telegramSupportUsername' => (string) $this->get('telegram_support_username', config('services.telegram.support_username', 'seyhady')),
+            'supportEmail' => (string) $this->get('support_email', ''),
+            'supportPhone' => (string) $this->get('support_phone', ''),
+            'address' => (string) $this->get('address', ''),
         ];
     }
 

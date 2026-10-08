@@ -68,15 +68,38 @@ class ReferralAttributionService
         // Register or update Telegram user
         $telegramUser = $this->telegramUserService->findOrCreate($from);
 
-        // Parse /start command
+        // Handle non-start commands and general inquiries
         if (! str_starts_with($text, '/start')) {
-            if ($text === '/help' || $text === '/contact') {
+            $lowerText = mb_strtolower($text);
+            if (
+                $text === '/help' ||
+                $text === '/contact' ||
+                str_contains($lowerText, 'support') ||
+                str_contains($lowerText, 'contact') ||
+                str_contains($lowerText, 'help')
+            ) {
                 $this->botService->sendSupportContactMessage($chatId);
 
                 return ['status' => 'help_sent'];
             }
 
-            return ['status' => 'unsupported_command'];
+            // Customer sent another message / inquiry (e.g. "Hi", pricing question)
+            $customer = Customer::where('telegram_user_id', $telegramUser->id)->first();
+            $lead = $customer ? Lead::where('customer_id', $customer->id)->latest()->first() : null;
+            if ($lead && $text !== '') {
+                LeadNote::create([
+                    'lead_id' => $lead->id,
+                    'user_id' => 1,
+                    'note' => "Customer inquiry message: \"{$text}\"",
+                ]);
+            }
+
+            $this->botService->sendCustomerInquiryAcknowledgment($chatId, $text);
+
+            return [
+                'status' => 'inquiry_acknowledged',
+                'lead_id' => $lead?->id,
+            ];
         }
 
         // Extract referral token: e.g. /start REF_TK9821ABC

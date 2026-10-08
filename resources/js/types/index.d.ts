@@ -369,6 +369,10 @@ export type PageProps<
         brandName: string;
         themeColor: string;
         systemLogo: string | null;
+        telegramSupportUsername?: string;
+        supportEmail?: string;
+        supportPhone?: string;
+        address?: string;
     };
     flash: {
         success?: string | null;

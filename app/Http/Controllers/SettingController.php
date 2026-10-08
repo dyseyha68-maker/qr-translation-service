@@ -113,6 +113,7 @@ class SettingController extends Controller
             'support_email' => ['nullable', 'email', 'max:100'],
             'support_phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:255'],
+            'telegram_support_username' => ['nullable', 'string', 'max:100'],
             'logo' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
         ]);
 
@@ -127,6 +128,9 @@ class SettingController extends Controller
         }
         if (array_key_exists('address', $validated)) {
             $this->settingService->set('address', $validated['address']);
+        }
+        if (array_key_exists('telegram_support_username', $validated)) {
+            $this->settingService->set('telegram_support_username', ltrim(trim((string) $validated['telegram_support_username']), '@'));
         }
 
         if ($request->hasFile('logo')) {
