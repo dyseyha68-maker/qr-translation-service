@@ -32,8 +32,13 @@ if [ -n "$DB_HOST" ] && [ -n "$DB_DATABASE" ]; then
             \$options = [
                 PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
             ];
-            \$ca = getenv('MYSQL_ATTR_SSL_CA') ?: '/etc/ssl/certs/ca-certificates.crt';
-            if (file_exists(\$ca)) {
+            \$ca = getenv('MYSQL_ATTR_SSL_CA');
+            if (!\$ca && file_exists('/var/www/html/database/certs/isrgrootx1.pem')) {
+                \$ca = '/var/www/html/database/certs/isrgrootx1.pem';
+            } elseif (!\$ca && file_exists('/etc/ssl/certs/ca-certificates.crt')) {
+                \$ca = '/etc/ssl/certs/ca-certificates.crt';
+            }
+            if (\$ca && file_exists(\$ca)) {
                 \$options[PDO::MYSQL_ATTR_SSL_CA] = \$ca;
             }
             \$pdo = new PDO(\"mysql:host=\$host;port=\$port\", \$user, \$pass, \$options);

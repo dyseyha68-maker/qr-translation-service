@@ -58,10 +58,10 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', file_exists(base_path('database/certs/isrgrootx1.pem')) ? base_path('database/certs/isrgrootx1.pem') : (file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : null)),
                 PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null
                     ? filter_var(env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN)
-                    : (env('MYSQL_ATTR_SSL_CA') ? false : null),
+                    : (file_exists(base_path('database/certs/isrgrootx1.pem')) || env('MYSQL_ATTR_SSL_CA') ? false : null),
             ], fn ($value) => $value !== null) : [],
         ],
 
@@ -81,10 +81,10 @@ return [
             'strict' => true,
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA', file_exists(base_path('database/certs/isrgrootx1.pem')) ? base_path('database/certs/isrgrootx1.pem') : (file_exists('/etc/ssl/certs/ca-certificates.crt') ? '/etc/ssl/certs/ca-certificates.crt' : null)),
                 PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT') !== null
                     ? filter_var(env('MYSQL_ATTR_SSL_VERIFY_SERVER_CERT'), FILTER_VALIDATE_BOOLEAN)
-                    : (env('MYSQL_ATTR_SSL_CA') ? false : null),
+                    : (file_exists(base_path('database/certs/isrgrootx1.pem')) || env('MYSQL_ATTR_SSL_CA') ? false : null),
             ], fn ($value) => $value !== null) : [],
         ],
 
