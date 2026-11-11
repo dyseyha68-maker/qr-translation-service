@@ -64,5 +64,9 @@ if [ -n "$APP_KEY" ]; then
     php artisan view:cache || true
 fi
 
+# Final permissions enforcement for storage and bootstrap/cache
+chmod -R 777 /var/www/html/storage /var/www/html/bootstrap/cache
+chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
 echo "🚀 Starting Supervisor (Nginx + PHP-FPM)..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

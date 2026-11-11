@@ -34,6 +34,24 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Http\Controllers\ScanNotificationController;
 use App\Http\Controllers\SettingController;
+use Illuminate\Support\Facades\DB;
+
+Route::get('/health-check', function () {
+    $results = [];
+    $results['app_key_set'] = !empty(config('app.key'));
+    $results['storage_logs_writable'] = is_writable(storage_path('logs'));
+    $results['storage_views_writable'] = is_writable(storage_path('framework/views'));
+    $results['storage_sessions_writable'] = is_writable(storage_path('framework/sessions'));
+    $results['bootstrap_cache_writable'] = is_writable(base_path('bootstrap/cache'));
+    try {
+        DB::connection()->getPdo();
+        $results['db_status'] = 'connected';
+        $results['db_database'] = DB::connection()->getDatabaseName();
+    } catch (\Throwable $e) {
+        $results['db_status'] = 'error: ' . $e->getMessage();
+    }
+    return response()->json($results);
+});
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
