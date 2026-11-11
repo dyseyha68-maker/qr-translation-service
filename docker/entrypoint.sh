@@ -6,6 +6,9 @@ PORT="${PORT:-80}"
 echo "🔧 Configuring Nginx to listen on port ${PORT}..."
 sed -i "s/LISTEN_PORT/${PORT}/g" /etc/nginx/http.d/default.conf
 
+# Ensure public/hot is removed so Laravel never thinks Vite is in dev mode
+rm -f /var/www/html/public/hot
+
 # Ensure storage directories exist and have proper permissions
 mkdir -p /var/www/html/storage/framework/sessions \
          /var/www/html/storage/framework/views \

@@ -24,10 +24,10 @@ FROM node:22-alpine AS frontend
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci || npm install
+RUN npm install
 
 COPY resources/ resources/
-COPY vite.config.js tsconfig.json ./
+COPY vite.config.js tsconfig.json tailwind.config.js postcss.config.js ./
 COPY --from=composer /app/vendor /app/vendor
 
 RUN npm run build
