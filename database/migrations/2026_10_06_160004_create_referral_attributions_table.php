@@ -53,7 +53,7 @@ return new class extends Migration
 
             $table->index(['lead_id', 'attribution_status']);
             $table->index(['customer_id', 'attribution_status']);
-            $table->index(['referral_partner_id', 'driver_id', 'vehicle_id']);
+            $table->index(['referral_partner_id', 'driver_id', 'vehicle_id'], 'ref_attr_partner_driver_veh_idx');
         });
     }
 
