@@ -161,6 +161,8 @@ class ReferralAttributionService
 
         // 3. Active code: Validate ownership integrity
         if (
+            ! $referralCode->driver ||
+            ! $referralCode->vehicle ||
             $referralCode->driver->referral_partner_id !== $referralCode->referral_partner_id ||
             $referralCode->vehicle->driver_id !== $referralCode->driver_id
         ) {

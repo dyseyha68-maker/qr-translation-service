@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\DriverStatus;
+use App\Enums\PartnerStatus;
+use App\Enums\PartnerType;
 use App\Enums\ReferralCodeStatus;
+use App\Enums\VehicleStatus;
+use App\Enums\VehicleType;
 use App\Models\Driver;
 use App\Models\ReferralCode;
 use App\Models\ReferralPartner;
 use App\Models\User;
 use App\Models\Vehicle;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -217,6 +223,127 @@ class ReferralCodeService
     {
         DB::transaction(function () use ($referralCode) {
             $referralCode->delete();
+        });
+    }
+
+    /**
+     * Generate a batch of unassigned referral codes for office pre-printing.
+     *
+     * @return Collection<int, ReferralCode>
+     */
+    public function generateBatch(int $quantity, string $prefix, ?string $label, User $actor): Collection
+    {
+        $quantity = max(1, min(100, $quantity));
+        $prefix = strtoupper(trim($prefix ?: 'REF-TK'));
+
+        return DB::transaction(function () use ($quantity, $prefix, $label, $actor) {
+            $createdCodes = collect();
+
+            for ($i = 0; $i < $quantity; $i++) {
+                $code = $this->generateUniqueCode($prefix);
+
+                $referralCode = ReferralCode::create([
+                    'code' => $code,
+                    'referral_partner_id' => null,
+                    'driver_id' => null,
+                    'vehicle_id' => null,
+                    'status' => ReferralCodeStatus::UNASSIGNED,
+                    'label' => $label ?: "Pre-printed sticker batch ({$prefix})",
+                    'notes' => 'Pre-printed at office. Ready for on-street vehicle assignment.',
+                    'created_by' => $actor->id,
+                ]);
+
+                $createdCodes->push($referralCode);
+            }
+
+            return $createdCodes;
+        });
+    }
+
+    /**
+     * Quick-assign an unassigned pre-printed referral code to a driver and vehicle.
+     *
+     * @param  array{driver_name: string, driver_phone: string, vehicle_plate: string, vehicle_type?: string, referral_partner_id?: ?int, notes?: ?string}  $data
+     *
+     * @throws ValidationException
+     */
+    public function assignDriver(ReferralCode $referralCode, array $data, User $actor): ReferralCode
+    {
+        return DB::transaction(function () use ($referralCode, $data, $actor) {
+            // 1. Resolve or create ReferralPartner
+            $partnerId = ! empty($data['referral_partner_id']) ? (int) $data['referral_partner_id'] : null;
+            if ($partnerId) {
+                $partner = ReferralPartner::findOrFail($partnerId);
+            } else {
+                $partner = ReferralPartner::firstOrCreate(
+                    ['name' => 'Independent Tuk-Tuk Drivers'],
+                    [
+                        'type' => PartnerType::COMPANY,
+                        'phone' => '+855 12 762 772',
+                        'email' => 'partners@din-co.com',
+                        'company_name' => 'Independent Tuk-Tuk Drivers Network',
+                        'address' => 'Phnom Penh, Cambodia',
+                        'notes' => 'Default partner pool for on-street tuk-tuk driver referrals.',
+                        'status' => PartnerStatus::ACTIVE,
+                    ]
+                );
+            }
+
+            // 2. Resolve or create Driver
+            $driverPhone = trim((string) $data['driver_phone']);
+            $driverName = trim((string) $data['driver_name']);
+            $notes = ! empty($data['notes']) ? trim((string) $data['notes']) : null;
+
+            $driver = Driver::where('phone', $driverPhone)->first();
+            if ($driver) {
+                $driver->update([
+                    'name' => $driverName,
+                    'referral_partner_id' => $partner->id,
+                    'status' => DriverStatus::ACTIVE,
+                    'notes' => $notes ? trim(($driver->notes ? $driver->notes . "\n" : '') . $notes) : $driver->notes,
+                ]);
+            } else {
+                $driver = Driver::create([
+                    'referral_partner_id' => $partner->id,
+                    'name' => $driverName,
+                    'phone' => $driverPhone,
+                    'status' => DriverStatus::ACTIVE,
+                    'notes' => $notes,
+                ]);
+            }
+
+            // 3. Resolve or create Vehicle
+            $plateNumber = strtoupper(trim((string) $data['vehicle_plate']));
+            $vehicleTypeStr = strtoupper(trim((string) ($data['vehicle_type'] ?? 'TUK_TUK')));
+            $vehicleType = VehicleType::tryFrom($vehicleTypeStr) ?? VehicleType::TUK_TUK;
+
+            $vehicle = Vehicle::where('plate_number', $plateNumber)->first();
+            if ($vehicle) {
+                $vehicle->update([
+                    'driver_id' => $driver->id,
+                    'vehicle_type' => $vehicleType,
+                    'status' => VehicleStatus::ACTIVE,
+                ]);
+            } else {
+                $vehicle = Vehicle::create([
+                    'driver_id' => $driver->id,
+                    'plate_number' => $plateNumber,
+                    'vehicle_type' => $vehicleType,
+                    'status' => VehicleStatus::ACTIVE,
+                ]);
+            }
+
+            // 4. Update the referral code
+            $referralCode->update([
+                'referral_partner_id' => $partner->id,
+                'driver_id' => $driver->id,
+                'vehicle_id' => $vehicle->id,
+                'status' => ReferralCodeStatus::ACTIVE,
+                'label' => "Vehicle sticker ({$vehicle->plate_number}) - {$driver->name}",
+                'notes' => trim(($referralCode->notes ? $referralCode->notes . "\n" : '') . "Assigned to driver {$driver->name} ({$vehicle->plate_number}) by {$actor->name} on " . now()->toFormattedDateString()),
+            ]);
+
+            return $referralCode->fresh(['referralPartner', 'driver', 'vehicle']);
         });
     }
 

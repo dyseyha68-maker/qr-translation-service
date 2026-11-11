@@ -57,6 +57,14 @@ class ReferralCode extends Model
     }
 
     /**
+     * Check if the referral code is unassigned (pre-printed).
+     */
+    public function isUnassigned(): bool
+    {
+        return $this->status === ReferralCodeStatus::UNASSIGNED;
+    }
+
+    /**
      * Scope a query to only include active referral codes.
      *
      * @param  Builder<ReferralCode>  $query
@@ -65,6 +73,17 @@ class ReferralCode extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ReferralCodeStatus::ACTIVE->value);
+    }
+
+    /**
+     * Scope a query to only include unassigned pre-printed referral codes.
+     *
+     * @param  Builder<ReferralCode>  $query
+     * @return Builder<ReferralCode>
+     */
+    public function scopeUnassigned(Builder $query): Builder
+    {
+        return $query->where('status', ReferralCodeStatus::UNASSIGNED->value);
     }
 
     /**

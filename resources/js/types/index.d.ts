@@ -97,10 +97,10 @@ export interface Vehicle {
 export interface ReferralCode {
     id: number;
     code: string;
-    referral_partner_id: number;
-    driver_id: number;
-    vehicle_id: number;
-    status: 'ACTIVE' | 'INACTIVE';
+    referral_partner_id?: number | null;
+    driver_id?: number | null;
+    vehicle_id?: number | null;
+    status: 'ACTIVE' | 'INACTIVE' | 'UNASSIGNED';
     label?: string | null;
     notes?: string | null;
     created_by: number;

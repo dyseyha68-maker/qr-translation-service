@@ -73,6 +73,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('vehicles/{vehicle}/deactivate', [VehicleController::class, 'deactivate'])->name('vehicles.deactivate');
     Route::resource('vehicles', VehicleController::class);
 
+    Route::post('referral-codes/batch-generate', [ReferralCodeController::class, 'batchGenerate'])->name('referral-codes.batch-generate');
+    Route::get('referral-codes/batch-print', [ReferralCodeController::class, 'batchPrint'])->name('referral-codes.batch-print');
+    Route::post('referral-codes/{referralCode}/assign-driver', [ReferralCodeController::class, 'assignDriver'])->name('referral-codes.assign-driver');
     Route::patch('referral-codes/{referral_code}/activate', [ReferralCodeController::class, 'activate'])->name('referral-codes.activate');
     Route::patch('referral-codes/{referral_code}/deactivate', [ReferralCodeController::class, 'deactivate'])->name('referral-codes.deactivate');
     Route::get('referral-codes/{referral_code}/qr', [ReferralCodeController::class, 'qr'])->name('referral-codes.qr');

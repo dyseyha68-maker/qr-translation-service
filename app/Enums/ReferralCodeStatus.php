@@ -8,6 +8,7 @@ enum ReferralCodeStatus: string
 {
     case ACTIVE = 'ACTIVE';
     case INACTIVE = 'INACTIVE';
+    case UNASSIGNED = 'UNASSIGNED';
 
     /**
      * @return array<int, string>

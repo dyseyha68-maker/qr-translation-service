@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@headlessui/vue": "^1.7.23",
+        "html-to-image": "^1.11.13",
         "lucide-vue-next": "^1.0.0"
     }
 }

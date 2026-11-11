@@ -112,23 +112,24 @@ drivers ───────▶ referral_qr_codes ───────▶ attr
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | BIGINT UNSIGNED | PK, AUTO_INCREMENT | Unique referral code record ID |
-| `referral_partner_id` | BIGINT UNSIGNED | NOT NULL, FK -> `referral_partners(id)`, `ON DELETE RESTRICT` | Partner hierarchy anchor |
-| `driver_id` | BIGINT UNSIGNED | NOT NULL, FK -> `drivers(id)`, `ON DELETE RESTRICT` | Assigned driver |
-| `vehicle_id` | BIGINT UNSIGNED | NOT NULL, FK -> `vehicles(id)`, `ON DELETE RESTRICT` | Assigned vehicle (at code issuance) |
+| `referral_partner_id` | BIGINT UNSIGNED | NULL, FK -> `referral_partners(id)`, `ON DELETE RESTRICT` | Partner hierarchy anchor (null for unassigned pre-printed codes) |
+| `driver_id` | BIGINT UNSIGNED | NULL, FK -> `drivers(id)`, `ON DELETE RESTRICT` | Assigned driver (null for unassigned pre-printed codes) |
+| `vehicle_id` | BIGINT UNSIGNED | NULL, FK -> `vehicles(id)`, `ON DELETE RESTRICT` | Assigned vehicle (null for unassigned pre-printed codes) |
 | `code` | VARCHAR(64) | UNIQUE, NOT NULL, INDEX | Collision-resistant alphanumeric token (e.g. `REF_TK9821ABC`) |
 | `label` | VARCHAR(255) | NULL | Descriptive flyer/campaign label (e.g. `Rear Seat Flyer - Phnom Penh Central`) |
 | `notes` | TEXT | NULL | Operational deployment notes |
-| `status` | VARCHAR(50) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'` |
+| `status` | VARCHAR(50) | NOT NULL, DEFAULT `'ACTIVE'`, INDEX | Enum: `'ACTIVE'`, `'INACTIVE'`, `'UNASSIGNED'` |
 | `deactivated_at` | TIMESTAMP | NULL | Timestamp of deactivation (preserved for attribution history) |
 | `created_by` | BIGINT UNSIGNED | NULL, FK -> `users(id)`, `ON DELETE RESTRICT` | Staff member who issued the code |
 | `created_at` / `updated_at` | TIMESTAMP | NULL | Audit timestamps |
 
 > [!IMPORTANT]
 > **Referral Code Integrity & Immutability Rules:**
-> 1. **Complete Ownership Tuple:** Every referral code binds directly to `referral_partner_id`, `driver_id`, and `vehicle_id`. The vehicle MUST belong to the driver, and the driver MUST belong to the partner.
-> 2. **Immutability of Attribution Anchor:** Once created, `referral_partner_id`, `driver_id`, `vehicle_id`, and `code` cannot be altered. Only `label` and `notes` can be edited.
-> 3. **Non-Recyclable Codes:** Deactivation sets `status = 'INACTIVE'` and timestamps `deactivated_at`. Codes are never deleted if historical leads or orders exist, and strings are never recycled.
-> 4. **Deep Link Formula:** `https://t.me/{BOT_USERNAME}?start={code}`. Bot username is read dynamically from `config('services.telegram.bot_username')`.
+> 1. **Complete Ownership Tuple:** Once assigned and activated, every referral code binds directly to `referral_partner_id`, `driver_id`, and `vehicle_id`. The vehicle MUST belong to the driver, and the driver MUST belong to the partner.
+> 2. **Pre-Printed Office Batch Workflow:** Codes can be pre-generated with status `'UNASSIGNED'` and null hierarchy for office printing. When deployed to a driver on the street, the code is assigned to the driver and vehicle and transitioned to `'ACTIVE'`.
+> 3. **Immutability of Attribution Anchor:** Once activated and attributed to orders, `referral_partner_id`, `driver_id`, `vehicle_id`, and `code` cannot be altered without an audited manual reassignment. Only `label` and `notes` can be edited.
+> 4. **Non-Recyclable Codes:** Deactivation sets `status = 'INACTIVE'` and timestamps `deactivated_at`. Codes are never deleted if historical leads or orders exist, and strings are never recycled.
+> 5. **Deep Link Formula:** `https://t.me/{BOT_USERNAME}?start={code}`. Bot username is read dynamically from `config('services.telegram.bot_username')`.
 
 ---
 
