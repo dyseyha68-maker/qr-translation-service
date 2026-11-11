@@ -51,6 +51,9 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 RUN chmod +x /usr/local/bin/install-php-extensions && \
     install-php-extensions pdo_mysql mbstring zip gd bcmath intl opcache pcntl
 
+# Configure PHP-FPM to listen only on loopback 127.0.0.1:9000 so external scanners (Render) don't detect port 9000
+RUN sed -i 's/listen = 9000/listen = 127.0.0.1:9000/' /usr/local/etc/php-fpm.d/zz-docker.conf
+
 WORKDIR /var/www/html
 
 # Copy codebase
